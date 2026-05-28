@@ -1,39 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<link rel="icon" href="favicon.ico">
-<title>LLM2Word</title>
+<title>LLM2Word | Math Bridge</title>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>ChatGPT → Word Math Bridge</title>
-
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
 <style>
-.katex-mathml {
-  position: static !important;
-  clip: auto !important;
-  width: auto !important;
-  height: auto !important;
-  overflow: visible !important;
-}
-
-.katex-html {
-  display: none !important;
-}
-</style>
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
-
-<style>
 :root {
-  --bg: #0b1020;
-  --panel: rgba(18, 24, 45, 0.82);
-  --panel-border: rgba(255,255,255,0.08);
+  --bg: #05070a;
+  --panel: #0d121d;
+  --panel-border: rgba(255,255,255,0.12);
   --text: #eef2ff;
-  --muted: #a5b4fc;
-  --accent: #7c3aed;
-  --accent-hover: #8b5cf6;
-  --shadow: 0 12px 40px rgba(0,0,0,0.35);
+  --muted: #94a3b8;
+  --accent: #6366f1;
+  --accent-hover: #4f46e5;
+  --shadow: 0 8px 32px rgba(0,0,0,0.4);
 }
 
 * { box-sizing: border-box; }
@@ -41,184 +22,150 @@
 body {
   margin: 0;
   min-height: 100vh;
-  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
   color: var(--text);
-  background:
-    radial-gradient(circle at top left, rgba(124,58,237,0.22), transparent 32%),
-    radial-gradient(circle at bottom right, rgba(59,130,246,0.18), transparent 30%),
-    var(--bg);
+  background: var(--bg);
 }
 
 header {
-  padding: 28px 32px 10px;
+  padding: 48px 32px 24px;
+  max-width: 1100px;
+  margin: 0 auto;
 }
 
 h1 {
-  margin: 0 0 8px;
-  font-size: 28px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  margin: 0 0 12px;
+  font-size: 3.5rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  background: linear-gradient(to right, #fff, var(--muted));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.sub-header {
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: var(--muted);
+  margin-bottom: 24px;
 }
 
 .subtitle {
-  color: rgba(238,242,255,0.72);
-  font-size: 14px;
-  line-height: 1.6;
-  max-width: 980px;
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.7;
+  max-width: 800px;
 }
 
 .main {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 20px;
-  padding: 18px 32px 32px;
+  gap: 24px;
+  padding: 0 32px 48px;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .panel {
   background: var(--panel);
-  backdrop-filter: blur(18px);
   border: 1px solid var(--panel-border);
-  border-radius: 24px;
-  padding: 18px;
+  border-radius: 20px;
+  padding: 24px;
   box-shadow: var(--shadow);
   display: flex;
   flex-direction: column;
-  min-height: 78vh;
+  min-height: 65vh;
 }
 
 .panel h2 {
-  margin: 0 0 14px;
-  font-size: 15px;
-  font-weight: 600;
-  color: rgba(255,255,255,0.88);
+  margin: 0 0 16px;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent);
 }
 
 textarea {
   width: 100%;
   flex: 1;
-  min-height: 420px;
   resize: none;
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 18px;
-  padding: 18px;
-  background: rgba(8,12,24,0.92);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  padding: 16px;
+  background: #05070a;
   color: var(--text);
-  font: 14px/1.7 "SFMono-Regular", Consolas, monospace;
+  font: 14px/1.6 "SFMono-Regular", Consolas, monospace;
   outline: none;
-  transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
 textarea:focus {
-  border-color: rgba(124,58,237,0.9);
-  box-shadow: 0 0 0 4px rgba(124,58,237,0.16);
-}
-
-.toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 14px;
-}
-
-.toolbar label {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  border-radius: 14px;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.06);
-  font-size: 13px;
-  color: rgba(238,242,255,0.86);
+  border-color: var(--accent);
 }
 
 .preview {
   flex: 1;
   overflow: auto;
-  border-radius: 18px;
-  padding: 22px;
-  background: rgba(255,255,255,0.98);
-  color: #111827;
+  border-radius: 12px;
+  padding: 20px;
+  background: #ffffff;
+  color: #1f2937;
   line-height: 1.7;
 }
 
-.preview h1,
-.preview h2,
-.preview h3 {
-  color: #111827;
+.toolbar {
+  display: flex;
+  gap: 16px;
+  margin-top: 16px;
 }
 
-.preview pre {
-  background: #f3f4f6;
-  padding: 14px;
-  border-radius: 12px;
-  overflow: auto;
-}
-
-.copy-wrap {
-  margin-top: 14px;
+.toolbar label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  cursor: pointer;
 }
 
 .copy-btn {
+  margin-top: 20px;
   width: 100%;
   border: none;
-  border-radius: 16px;
-  padding: 14px 18px;
-  background: linear-gradient(135deg, var(--accent), #2563eb);
+  border-radius: 12px;
+  padding: 16px;
+  background: var(--accent);
   color: white;
-  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.14s ease, opacity 0.14s ease;
+  transition: background 0.2s;
 }
 
-.copy-btn:hover {
-  opacity: 0.96;
-  transform: translateY(-1px);
-}
+.copy-btn:hover { background: var(--accent-hover); }
 
-.status {
-  margin-top: 12px;
-  min-height: 1.4em;
-  font-size: 13px;
-  color: rgba(238,242,255,0.72);
-}
+.status { margin-top: 16px; font-size: 0.8rem; color: var(--muted); }
 
-.note {
-  margin-top: 10px;
-  font-size: 12px;
-  line-height: 1.5;
-  color: rgba(238,242,255,0.58);
-}
-
-@media (max-width: 980px) {
-  .main {
-    grid-template-columns: 1fr;
-  }
-
-  .panel {
-    min-height: auto;
-  }
+@media (max-width: 900px) {
+  .main { grid-template-columns: 1fr; }
 }
 </style>
 </head>
 <body>
+
 <header>
   <h1>LLM2Word</h1>
-  <h2>LLM → MS Word Equation Converter</h2>
+  <div class="sub-header">Convert LLM equations for Microsoft Word</div>
   <div class="subtitle">
-    Paste LLM output here to convert equations into Word-compatible formatting.
-	If equations fail to convert properly, ask the LLM to "Write this as LaTex here in the chat."
-	Works best if you click on the 'Copy content' icon underneath the message. 
+    Paste your LLM output to convert LaTeX formatted equations into a Word-compatible clipboard format. 
+    If equations aren't rendering, ask your LLM to "Provide the output with standard LaTeX math formatting.
+    Also, try clicking the 'Copy response' button below the output for best results."
   </div>
 </header>
 
 <div class="main">
   <section class="panel">
     <h2>Input</h2>
-    <textarea id="input" spellcheck="false" placeholder="Paste ChatGPT output here..."></textarea>
+    <textarea id="input" spellcheck="false" placeholder="Paste content here..."></textarea>
     <div class="toolbar">
-      <label><input type="checkbox" id="autoCopy" checked> Auto-copy on paste</label>
+      <label><input type="checkbox" id="autoCopy" checked> Auto-copy</label>
       <label><input type="checkbox" id="livePreview" checked> Live preview</label>
     </div>
     <div class="status" id="status">Ready.</div>
@@ -227,146 +174,47 @@ textarea:focus {
   <section class="panel">
     <h2>Preview</h2>
     <div id="preview" class="preview"></div>
-
-    <div class="copy-wrap">
-      <button class="copy-btn" id="copyBtn">Copy converted content</button>
-    </div>
+    <button class="copy-btn" id="copyBtn">Copy Converted Content</button>
   </section>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 <script>
-marked.setOptions({ gfm: true, breaks: true });
-
-const inputEl = document.getElementById('input');
-const previewEl = document.getElementById('preview');
-const statusEl = document.getElementById('status');
-const autoCopyEl = document.getElementById('autoCopy');
-const livePreviewEl = document.getElementById('livePreview');
-const copyBtn = document.getElementById('copyBtn');
-
-
+const inputEl = document.getElementById('input'), previewEl = document.getElementById('preview'), statusEl = document.getElementById('status'), autoCopyEl = document.getElementById('autoCopy'), livePreviewEl = document.getElementById('livePreview'), copyBtn = document.getElementById('copyBtn');
 let renderTimer = null;
 
-function setStatus(msg) {
-  statusEl.textContent = msg;
-}
-
-function escapeHtml(text) {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
-function renderMath(tex, displayMode) {
-  try {
-    return katex.renderToString(tex, {
-      displayMode,
-      output: 'mathml',
-      throwOnError: false,
-      strict: 'warn'
-    });
-  } catch (err) {
-    return `<code>${escapeHtml(tex)}</code>`;
-  }
-}
-
-function convertMarkdownWithMath(raw) {
-  const placeholders = [];
-  let working = raw
-    .replace(/\r\n/g, '\n')
-    .replace(/\r/g, '\n');
-
-  // Protect display math first.
-  working = working.replace(/\$\$([\s\S]+?)\$\$/g, (_, tex) => {
-    const id = placeholders.length;
-    placeholders.push({ tex: tex.trim(), display: true });
-    return `@@MATH_${id}@@`;
-  });
-
-  // Protect inline math.
-  working = working.replace(/(?<!\\)\$([^$\n]+?)(?<!\\)\$/g, (_, tex) => {
-    const id = placeholders.length;
-    placeholders.push({ tex: tex.trim(), display: false });
-    return `@@MATH_${id}@@`;
-  });
-
-  let html = marked.parse(working);
-
-  placeholders.forEach((item, i) => {
-    const rendered = renderMath(item.tex, item.display);
-    html = html.replaceAll(`@@MATH_${i}@@`, rendered);
-  });
-
-  return html;
+function renderMath(tex, display) {
+  try { return katex.renderToString(tex, { displayMode: display, output: 'mathml', throwOnError: false }); } 
+  catch (e) { return `<code>${tex}</code>`; }
 }
 
 function updatePreview() {
-  const raw = inputEl.value;
-  const html = convertMarkdownWithMath(raw);
+  let raw = inputEl.value;
+  const placeholders = [];
+  raw = raw.replace(/\$\$([\s\S]+?)\$\$/g, (_, t) => { placeholders.push({t: t.trim(), d: true}); return `@@${placeholders.length-1}@@`; });
+  raw = raw.replace(/(?<!\\)\$([^$\n]+?)(?<!\\)\$/g, (_, t) => { placeholders.push({t: t.trim(), d: false}); return `@@${placeholders.length-1}@@`; });
+  let html = marked.parse(raw);
+  placeholders.forEach((p, i) => html = html.replaceAll(`@@${i}@@`, renderMath(p.t, p.d)));
   previewEl.innerHTML = html;
   return html;
 }
 
-async function copyHtmlToClipboard(html) {
-  const plainText = previewEl.innerText || '';
-  const htmlBlob = new Blob([html], { type: 'text/html' });
-  const textBlob = new Blob([plainText], { type: 'text/plain' });
-
-  await navigator.clipboard.write([
-    new ClipboardItem({
-      'text/html': htmlBlob,
-      'text/plain': textBlob
-    })
-  ]);
+async function copyHtml(html) {
+  await navigator.clipboard.write([new ClipboardItem({'text/html': new Blob([html], {type:'text/html'}), 'text/plain': new Blob([previewEl.innerText], {type:'text/plain'})})]);
 }
 
-function debounceRender(shouldCopy = false) {
+inputEl.addEventListener('input', () => { if(livePreviewEl.checked) debounceRender(); });
+copyBtn.addEventListener('click', async () => { await copyHtml(updatePreview()); statusEl.textContent = "Copied to clipboard!"; });
+
+function debounceRender() {
   clearTimeout(renderTimer);
-  renderTimer = setTimeout(async () => {
-    const html = updatePreview();
-    if (shouldCopy && autoCopyEl.checked) {
-      try {
-        await copyHtmlToClipboard(html);
-        setStatus('Converted content copied to clipboard. Paste into Word now.');
-      } catch (err) {
-        setStatus('Preview updated. Clipboard copy was blocked by the browser. Use the Copy button.');
-      }
-    } else {
-      setStatus('Preview updated.');
-    }
-  }, 80);
+  renderTimer = setTimeout(() => { updatePreview(); statusEl.textContent = "Preview updated."; }, 150);
 }
 
-inputEl.addEventListener('input', () => {
-  if (livePreviewEl.checked) {
-    debounceRender(false);
-  }
-});
-
-inputEl.addEventListener('paste', () => {
-  setTimeout(() => {
-    debounceRender(true);
-  }, 0);
-});
-
-copyBtn.addEventListener('click', async () => {
-  const html = updatePreview();
-  try {
-    await copyHtmlToClipboard(html);
-    setStatus('Converted content copied to clipboard. Paste into Word now.');
-  } catch (err) {
-    setStatus('Clipboard copy was blocked by the browser. Open this page on HTTPS or localhost, then try again.');
-  }
-});
-
-
-
-// Seed example
-inputEl.value = `# Example\n\nChatGPT often gives equations like $E = mc^2$ inline and display equations like:\n\n$$\n\frac{-b \pm \sqrt{b^2 - 4ac}}{2a}\n$$\n\n- Bullet one\n- Bullet two`;
-debounceRender(false);
+// Initial state: Pre-fill with equations, but clear preview logic is handled after
+inputEl.value = "### Math Samples\n\nInline equation: $P(A|B) = \\frac{P(B|A)P(A)}{P(B)}$\n\nDisplay equation:\n$$\\int_{-\\infty}^{\\infty} e^{-x^2} dx = \\sqrt{\\pi}$$\n\nMatrix example:\n$$\n\\begin{bmatrix}\n a & b \\\\\n c & d \n\\end{bmatrix}\n$$";
+updatePreview();
 </script>
 </body>
 </html>
