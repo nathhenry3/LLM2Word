@@ -29,7 +29,7 @@ body {
 
 header {
   padding: 48px 32px 24px;
-  max-width: 1100px;
+  max-width: 1200px;
   margin: 0 auto;
 }
 
@@ -112,20 +112,6 @@ textarea:focus {
   line-height: 1.7;
 }
 
-.toolbar {
-  display: flex;
-  gap: 16px;
-  margin-top: 16px;
-}
-
-.toolbar label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.85rem;
-  cursor: pointer;
-}
-
 .copy-btn {
   margin-top: 20px;
   width: 100%;
@@ -143,6 +129,63 @@ textarea:focus {
 
 .status { margin-top: 16px; font-size: 0.8rem; color: var(--muted); }
 
+/* Accordion details styling */
+.troubleshooting-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 32px 48px;
+}
+
+details {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: var(--shadow);
+}
+
+summary {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--accent);
+  cursor: pointer;
+  outline: none;
+  user-select: none;
+  list-style: none; /* Hide native arrow */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Custom indicator to match aesthetic */
+summary::after {
+  content: '▼';
+  font-size: 0.8rem;
+  transition: transform 0.2s ease;
+  color: var(--muted);
+}
+
+details[open] summary::after {
+  transform: rotate(180deg);
+}
+
+.accordion-content {
+  margin-top: 16px;
+}
+
+pre {
+  background: #05070a;
+  border: 1px solid var(--panel-border);
+  color: var(--text);
+  padding: 16px;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 0.85em;
+  border-radius: 10px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  margin: 12px 0 0;
+}
+
 @media (max-width: 900px) {
   .main { grid-template-columns: 1fr; }
 }
@@ -153,24 +196,8 @@ textarea:focus {
 <header>
   <h1>LLM2Word</h1>
   <div class="sub-header">Convert LLM-generated equations to MS Word format</div>
-  
   <div class="subtitle">
     Paste your LLM output here to convert LaTeX- or Markdown-formatted equations into a Word-compatible clipboard format.
-  </div>
-
-  <div class="instruction-box" style="background: #f4f4f9; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #ddd;">
-    <h3 style="margin-top: 0;">Troubleshooting</h3>
-    <p style="font-size: 0.9em; color: #444;">
-      If the conversion fails on the first try, instruct your LLM with the following prompt before generating the output you wish to convert:
-    </p>
-    <pre style="background: #e8e8e8; padding: 10px; font-size: 0.85em; overflow-x: auto; white-space: pre-wrap;">
-Output only Markdown and LaTeX for equations. Include all text from the previous output.
-Use $...$ for inline math and $$...$$ for display math.
-Each display equation must be written in its own separate block.
-Do not place multiple equations inside a single block.
-Do not use visual formatting tricks such as spacing, alignment, or multiple equations on one line.
-Do not include separators or decorative characters.
-Do not explain the output.</pre>
   </div>
 </header>
 
@@ -178,10 +205,6 @@ Do not explain the output.</pre>
   <section class="panel">
     <h2>Input</h2>
     <textarea id="input" spellcheck="false" placeholder="Paste content here..."></textarea>
-    <div class="toolbar">
-      <label><input type="checkbox" id="autoCopy" checked> Auto-copy</label>
-      <label><input type="checkbox" id="livePreview" checked> Live preview</label>
-    </div>
     <div class="status" id="status">Ready.</div>
   </section>
 
@@ -192,22 +215,62 @@ Do not explain the output.</pre>
   </section>
 </div>
 
+<!-- Relocated troubleshooting accordion -->
+<footer class="troubleshooting-container">
+  <details open>
+    <summary>Troubleshooting & System Prompts</summary>
+    <div class="accordion-content">
+      <p style="font-size: 0.9em; color: var(--muted); margin: 0 0 12px; line-height: 1.6;">
+        If the conversion fails on the first try, instruct your LLM with the following prompt before generating the output you wish to convert:
+      </p>
+      <pre>Output only Markdown and LaTeX for equations. Include all text from the previous output.
+Use $...$ for inline math and $$...$$ for display math.
+Each display equation must be written in its own separate block.
+Do not place multiple equations inside a single block.
+Do not use visual formatting tricks such as spacing, alignment, or multiple equations on one line.
+Do not include separators or decorative characters.
+Do not explain the output.</pre>
+    </div>
+  </details>
+</footer>
+
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 <script>
-const inputEl = document.getElementById('input'), previewEl = document.getElementById('preview'), statusEl = document.getElementById('status'), autoCopyEl = document.getElementById('autoCopy'), livePreviewEl = document.getElementById('livePreview'), copyBtn = document.getElementById('copyBtn');
+const inputEl = document.getElementById('input'), 
+      previewEl = document.getElementById('preview'), 
+      statusEl = document.getElementById('status'), 
+      copyBtn = document.getElementById('copyBtn');
 let renderTimer = null;
 
 function renderMath(tex, display) {
-  try { return katex.renderToString(tex, { displayMode: display, output: 'mathml', throwOnError: false }); } 
-  catch (e) { return `<code>${tex}</code>`; }
+  try { 
+    return katex.renderToString(tex, { 
+      displayMode: display, 
+      output: 'mathml', 
+      throwOnError: false 
+    }); 
+  } catch (e) { 
+    return `<code>${tex}</code>`; 
+  }
 }
 
 function updatePreview() {
   let raw = inputEl.value;
   const placeholders = [];
-  raw = raw.replace(/\$\$([\s\S]+?)\$\$/g, (_, t) => { placeholders.push({t: t.trim(), d: true}); return `@@${placeholders.length-1}@@`; });
-  raw = raw.replace(/(?<!\\)\$([^$\n]+?)(?<!\\)\$/g, (_, t) => { placeholders.push({t: t.trim(), d: false}); return `@@${placeholders.length-1}@@`; });
+  
+  // Extract display equations
+  raw = raw.replace(/\$\$([\s\S]+?)\$\$/g, (_, t) => { 
+    placeholders.push({t: t.trim(), d: true}); 
+    return `@@${placeholders.length-1}@@`; 
+  });
+  
+  // Extract inline equations
+  raw = raw.replace(/(?<!\\)\$([^$\n]+?)(?<!\\)\$/g, (_, t) => { 
+    placeholders.push({t: t.trim(), d: false}); 
+    return `@@${placeholders.length-1}@@`; 
+  });
+  
   let html = marked.parse(raw);
   placeholders.forEach((p, i) => html = html.replaceAll(`@@${i}@@`, renderMath(p.t, p.d)));
   previewEl.innerHTML = html;
@@ -215,18 +278,34 @@ function updatePreview() {
 }
 
 async function copyHtml(html) {
-  await navigator.clipboard.write([new ClipboardItem({'text/html': new Blob([html], {type:'text/html'}), 'text/plain': new Blob([previewEl.innerText], {type:'text/plain'})})]);
+  try {
+    await navigator.clipboard.write([
+      new ClipboardItem({
+        'text/html': new Blob([html], {type:'text/html'}), 
+        'text/plain': new Blob([previewEl.innerText], {type:'text/plain'})
+      })
+    ]);
+  } catch (err) {
+    statusEl.textContent = "Failed to copy. Please check browser permissions.";
+  }
 }
 
-inputEl.addEventListener('input', () => { if(livePreviewEl.checked) debounceRender(); });
-copyBtn.addEventListener('click', async () => { await copyHtml(updatePreview()); statusEl.textContent = "Copied to clipboard!"; });
+// Event listeners
+inputEl.addEventListener('input', debounceRender);
+copyBtn.addEventListener('click', async () => { 
+  await copyHtml(updatePreview()); 
+  statusEl.textContent = "Copied to clipboard!"; 
+});
 
 function debounceRender() {
   clearTimeout(renderTimer);
-  renderTimer = setTimeout(() => { updatePreview(); statusEl.textContent = "Preview updated."; }, 150);
+  renderTimer = setTimeout(() => { 
+    updatePreview(); 
+    statusEl.textContent = "Preview updated."; 
+  }, 150);
 }
 
-// Initial state: Pre-fill with equations, but clear preview logic is handled after
+// Initial hydration
 inputEl.value = "### Math Samples\n\nInline equation: $P(A|B) = \\frac{P(B|A)P(A)}{P(B)}$\n\nDisplay equation:\n$$\\int_{-\\infty}^{\\infty} e^{-x^2} dx = \\sqrt{\\pi}$$\n\nMatrix example:\n$$\n\\begin{bmatrix}\n a & b \\\\\n c & d \n\\end{bmatrix}\n$$";
 updatePreview();
 </script>
