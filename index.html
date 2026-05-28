@@ -153,10 +153,24 @@ textarea:focus {
 <header>
   <h1>LLM2Word</h1>
   <div class="sub-header">Convert LLM-generated equations to MS Word format</div>
+  
   <div class="subtitle">
-    Paste your LLM output here to convert LaTeX formatted equations into a Word-compatible clipboard format, ready to be copied directly into Word. 
-    If equations aren't rendering, ask your LLM to "Provide the output with standard LaTeX math formatting".
-    Also, try clicking the 'Copy response' button below the output for best results.
+    Paste your LLM output here to convert LaTeX- or Markdown-formatted equations into a Word-compatible clipboard format.
+  </div>
+
+  <div class="instruction-box" style="background: #f4f4f9; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #ddd;">
+    <h3 style="margin-top: 0;">Troubleshooting</h3>
+    <p style="font-size: 0.9em; color: #444;">
+      If the conversion fails on the first try, instruct your LLM with the following prompt before generating the output you wish to convert:
+    </p>
+    <pre style="background: #e8e8e8; padding: 10px; font-size: 0.85em; overflow-x: auto; white-space: pre-wrap;">
+Output only Markdown and LaTeX for equations. Include all text from the previous output.
+Use $...$ for inline math and $$...$$ for display math.
+Each display equation must be written in its own separate block.
+Do not place multiple equations inside a single block.
+Do not use visual formatting tricks such as spacing, alignment, or multiple equations on one line.
+Do not include separators or decorative characters.
+Do not explain the output.</pre>
   </div>
 </header>
 
