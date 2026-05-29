@@ -260,6 +260,12 @@ textarea:focus {
   line-height: 1.7;
 }
 
+.preview table,
+.preview th,
+.preview td {
+  border-color: var(--table-border) !important;
+}
+
 .table-preview-empty {
   color: var(--muted);
   margin: 0;
@@ -279,6 +285,13 @@ textarea:focus {
 }
 
 .copy-btn:hover { background: var(--accent-hover); }
+
+.paste-tip {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
 
 .status { margin-top: 16px; font-size: 0.8rem; color: var(--muted); }
 
@@ -394,6 +407,7 @@ pre {
     <h2>Preview</h2>
     <div id="preview" class="preview"></div>
     <button class="copy-btn" id="copyBtn">Copy Converted Content</button>
+    <p class="paste-tip">Tip: When pasting into Word, choose <strong>Keep Source Formatting</strong> for the best table borders and equation layout.</p>
   </section>
 </div>
 
@@ -408,6 +422,22 @@ pre {
     <h2>Word Table Preview</h2>
     <div id="tablePreview" class="preview"></div>
     <button class="copy-btn" id="copyTableBtn">Copy Word Table</button>
+    <p class="paste-tip">Tip: When pasting into Word, choose <strong>Keep Source Formatting</strong> for the best table borders and equation layout.</p>
+  </section>
+</div>
+
+<div class="main tool-view" id="omniView" hidden>
+  <section class="panel">
+    <h2>Mixed Content Input</h2>
+    <textarea id="omniInput" spellcheck="false" placeholder="Paste mixed prose, equations, markdown tables, and CSV blocks here..."></textarea>
+    <div class="status" id="omniStatus">Ready. Paste mixed content to format equations and tables together for Word.</div>
+  </section>
+
+  <section class="panel">
+    <h2>Word Output Preview</h2>
+    <div id="omniPreview" class="preview"></div>
+    <button class="copy-btn" id="copyOmniBtn">Copy Omni Content</button>
+    <p class="paste-tip">Tip: When pasting into Word, choose <strong>Keep Source Formatting</strong> for the best table borders and equation layout.</p>
   </section>
 </div>
 
@@ -844,19 +874,22 @@ function extractMarkdownTables(markdown) {
 }
 
 function buildWordTableHtml(tables, formatCell = escapeHtml) {
-  const borderColor = getTableBorderColor();
+  const wordBorderColor = '#000000';
   const wrapperStyle = 'font-family: Calibri, Arial, sans-serif; font-size: 11pt; line-height: 1.2;';
-  const tableStyle = 'border-collapse: collapse; table-layout: auto; width: auto; margin: 8px 0; font-size: 11pt;';
-  const headerCellBaseStyle = `border: 1px solid ${borderColor}; padding: 2px 4px; text-align: left; vertical-align: top;`;
-  const cellStyle = `border: 1px solid ${borderColor}; padding: 2px 4px; text-align: left; vertical-align: top;`;
+  const tableStyle = `border-collapse: collapse; table-layout: auto; width: auto; margin: 8px 0; font-size: 11pt; border: 1px solid ${wordBorderColor}; mso-border-alt: solid ${wordBorderColor} 0.5pt; mso-table-lspace: 0pt; mso-table-rspace: 0pt;`;
+  const wordBorderStyle = `mso-border-alt: solid ${wordBorderColor} 0.5pt;`;
+  const headerCellBaseStyle = `border: 1px solid ${wordBorderColor}; ${wordBorderStyle} padding: 2px 4px; text-align: left; vertical-align: top;`;
+  const cellStyle = `border: 1px solid ${wordBorderColor}; ${wordBorderStyle} padding: 2px 4px; text-align: left; vertical-align: top;`;
+  const tableAttributes = `border="1" cellspacing="0" cellpadding="2" bordercolor="${wordBorderColor}"`;
+  const cellAttributes = `bordercolor="${wordBorderColor}"`;
 
   const tableHtml = tables.map(table => {
     const headerWeight = table.hasHeaderRow ? 'bold' : 'normal';
     const headerStyle = `${headerCellBaseStyle} font-weight: ${headerWeight};`;
-    const headerHtml = `<thead><tr>${table.headers.map(cell => `<th style="${headerStyle}">${formatCell(cell)}</th>`).join('')}</tr></thead>`;
-    const bodyRows = table.rows.map(row => `<tr>${row.map(cell => `<td style="${cellStyle}">${formatCell(cell)}</td>`).join('')}</tr>`).join('');
+    const headerHtml = `<thead><tr>${table.headers.map(cell => `<th ${cellAttributes} style="${headerStyle}">${formatCell(cell)}</th>`).join('')}</tr></thead>`;
+    const bodyRows = table.rows.map(row => `<tr>${row.map(cell => `<td ${cellAttributes} style="${cellStyle}">${formatCell(cell)}</td>`).join('')}</tr>`).join('');
     const bodyHtml = `<tbody>${bodyRows}</tbody>`;
-    return `<table style="${tableStyle}">${headerHtml}${bodyHtml}</table>`;
+    return `<table ${tableAttributes} style="${tableStyle}">${headerHtml}${bodyHtml}</table>`;
   }).join('');
 
   return `<div style="${wrapperStyle}">${tableHtml}</div>`;
@@ -1166,7 +1199,56 @@ function debounceOmniRender() {
 updateThemeToggle();
 inputEl.value = "### Math Samples\n\nInline equation: $P(A|B) = \\frac{P(B|A)P(A)}{P(B)}$\n\nDisplay equation:\n$$\\int_{-\\infty}^{\\infty} e^{-x^2} dx = \\sqrt{\\pi}$$\n\nMatrix example:\n$$\n\\begin{bmatrix}\n a & b \\\\\n c & d \n\\end{bmatrix}\n$$";
 tableInputEl.value = "Participant_ID,Condition,Reaction_Time_ms,Accuracy_Rate,Session_Date\nP_001,Control,450,0.96,2026-05-10\nP_002,Treatment_A,512,0.88,2026-05-11\nP_003,Treatment_B,389,0.92,2026-05-11\nP_004,Control,421,0.99,2026-05-12";
-omniInputEl.value = "### Mixed Sample\n\nThe model is summarized by $y = mx + b$ and the loss is:\n\n$$\nL = \\frac{1}{n} \\sum_{i=1}^{n}(y_i - \\hat{y}_i)^2\n$$\n\n| Metric | Formula | Result |\n| --- | --- | --- |\n| Mean | $\\bar{x}$ | 12.4 |\n| Std. Dev. | $s$ | 2.1 |\n\nParticipant_ID,Condition,Score\nP_001,Control,91\nP_002,Treatment,95";
+omniInputEl.value = String.raw`# Mixed Formatting Test Suite: Tables and Equations
+
+Use this sample to verify that prose, inline math, display equations, and multiple tables all copy cleanly into Word.
+
+### 1. Structural Comparison Matrix
+
+This table checks formula-heavy cells, Markdown column alignment, and math inside headers and rows.
+
+| Structural Formula | Distribution Vector | Expected Mean ($\mu$) | Boundary Conditions | System Stability |
+| --- | --- | --- | --- | --- |
+| $Y_i = \beta_0 + \beta_1 X_{1i} + \epsilon_i$ | $\epsilon \sim \mathcal{N}(0, \sigma^2 \mathbf{I})$ | $0.00$ | $n \ge 30$ | Stable |
+| $\ln\left(\frac{p}{1-p}\right) = \mathbf{X}\boldsymbol{\beta}$ | $p \in (0, 1)$ | $\text{N/A}$ | $p \neq 0, p \neq 1$ | Degraded |
+| $\nu = \frac{\alpha}{\beta} \cdot \sqrt{\pi}$ | $\alpha \sim \Gamma(a, b)$ | $\frac{a}{b}$ | $b > 0 \mid a > 1$ | Stable |
+| $\mathbf{A} \mathbf{x} = \lambda \mathbf{x}$ | $\det(\mathbf{A} - \lambda \mathbf{I}) = 0$ | $\sum_{i=1}^n \frac{\lambda_i}{n}$ | $\mathbf{A} \in \mathbb{R}^{n \times n}$ | Critical |
+
+### 2. Multivariate System Density Block
+
+This display equation checks large brackets, inverse covariance terms, superscripts, and long single-line equations.
+
+$$
+f(\mathbf{x} \mid \boldsymbol{\mu}, \boldsymbol{\Sigma}) = \frac{1}{(2\pi)^{k/2} |\boldsymbol{\Sigma}|^{1/2}} \exp \left( -\frac{1}{2} (\mathbf{x} - \boldsymbol{\mu})^T \boldsymbol{\Sigma}^{-1} (\mathbf{x} - \boldsymbol{\mu}) \right)
+$$
+
+### 3. Covariance Configuration Values
+
+This table checks empty cells, numeric precision, text values, and units written inside math.
+
+| Coordinate ID | Operational Mode | Latency Threshold ($\tau$) | Processing Variance ($\sigma^2$) | Compliance Flag |
+| --- | --- | --- | --- | --- |
+| LOC_001 | Control Environment | $12.45 \text{ ms}$ | $0.0021$ | TRUE |
+| LOC_002 | Isolated Stimulus A | $45.12 \text{ ms}$ | $0.1492$ | TRUE |
+| LOC_003 | Isolated Stimulus B |  | $0.9201$ | FALSE |
+| LOC_004 | Boundary Analysis | $108.90 \text{ ms}$ | $12.0400$ | TRUE |
+
+### 4. CSV Import Block
+
+This raw CSV block checks comma-separated parsing, quoted fields, percentages, and date values.
+
+Dataset,Scenario,Sample_Size,Completion_Rate,Review_Date
+Alpha,"Baseline, no intervention",120,98.5%,2026-05-01
+Beta,"Treatment, phase 1",96,91.2%,2026-05-08
+Gamma,"Treatment, phase 2",104,94.7%,2026-05-15
+
+### 5. Algebraic Transformation Properties
+
+This matrix equation checks bracket sizing, line length, matrix layout, and spacing around implication symbols.
+
+$$
+\mathbf{P} = \begin{bmatrix} 1 - \alpha & \alpha \\ \beta & 1 - \beta \end{bmatrix} \implies \mathbf{P}^n = \frac{1}{\alpha + \beta} \begin{bmatrix} \beta & \alpha \\ \beta & \alpha \end{bmatrix} + \frac{(1 - \alpha - \beta)^n}{\alpha + \beta} \begin{bmatrix} \alpha & -\alpha \\ -\beta & \beta \end{bmatrix}
+$$`;
 updatePreview();
 renderTablePreview();
 renderOmniPreview();
