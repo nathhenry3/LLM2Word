@@ -420,7 +420,7 @@ Do not explain the output.</pre>
 
 <footer class="troubleshooting-container" id="tableTroubleshooting" hidden>
   <details open>
-    <summary>Table Troubleshooting &amp; System Prompts</summary>
+    <summary>Troubleshooting &amp; System Prompts</summary>
     <div class="accordion-content">
       <p class="help-text">
         If a table does not parse cleanly, ask your LLM to regenerate only the table in one of these simple formats before pasting it into the Table Optimizer:
@@ -676,6 +676,42 @@ function splitCsvRow(line) {
   return { cells, isComplete: !inQuotes };
 }
 
+function looksLikeDataValue(value) {
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+
+  return /^[-+]?[$€£¥]?[\d,]+(?:\.\d+)?%?$/.test(trimmed)
+    || /^\d{1,4}[-/]\d{1,2}[-/]\d{1,4}$/.test(trimmed)
+    || /^(?:true|false|yes|no|n\/?a)$/i.test(trimmed)
+    || /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(trimmed)
+    || /^https?:\/\//i.test(trimmed);
+}
+
+function looksLikeHeaderLabel(value) {
+  const trimmed = value.trim();
+  return trimmed.length > 0
+    && trimmed.length <= 80
+    && /[A-Za-z]/.test(trimmed)
+    && !looksLikeDataValue(trimmed);
+}
+
+function hasClearlyLabeledFirstRow(rows) {
+  if (rows.length < 2) return false;
+
+  const headerLabels = rows[0].map(cell => cell.trim());
+  if (headerLabels.some(cell => !looksLikeHeaderLabel(cell))) return false;
+
+  const uniqueLabels = new Set(headerLabels.map(cell => cell.toLowerCase()));
+  if (uniqueLabels.size !== headerLabels.length) return false;
+
+  const dataRows = rows.slice(1).filter(row => row.some(cell => cell.trim()));
+  if (!dataRows.length) return false;
+
+  return headerLabels.some((header, columnIndex) =>
+    dataRows.some(row => looksLikeDataValue(row[columnIndex] || '') && !looksLikeDataValue(header))
+  );
+}
+
 function extractCsvTables(input) {
   const blocks = input
     .replace(/\r\n?/g, '\n')
@@ -691,10 +727,13 @@ function extractCsvTables(input) {
     const rawRows = parsedRows.map(row => row.cells);
     const columnCount = Math.max(...rawRows.map(row => row.length));
 
+    const rows = rawRows.map(row => normalizeRow(row, columnCount));
+
     tables.push({
-      headers: normalizeRow(rawRows[0], columnCount),
-      rows: rawRows.slice(1).map(row => normalizeRow(row, columnCount)),
-      columnCount
+      headers: rows[0],
+      rows: rows.slice(1),
+      columnCount,
+      hasHeaderRow: hasClearlyLabeledFirstRow(rows)
     });
 
     return tables;
@@ -724,7 +763,8 @@ function extractMarkdownTables(markdown) {
     tables.push({
       headers: normalizeRow(headers, columnCount),
       rows: rawRows.map(row => normalizeRow(row, columnCount)),
-      columnCount
+      columnCount,
+      hasHeaderRow: true
     });
     index -= 1;
   }
@@ -735,10 +775,12 @@ function extractMarkdownTables(markdown) {
 function buildWordTableHtml(tables) {
   const wrapperStyle = 'font-family: Calibri, Arial, sans-serif; font-size: 11pt; line-height: 1.2;';
   const tableStyle = 'border-collapse: collapse; table-layout: auto; width: auto; margin: 8px 0; font-size: 11pt;';
-  const headerStyle = 'border: 1px solid #000000; padding: 2px 4px; text-align: left; vertical-align: top; font-weight: normal;';
+  const headerCellBaseStyle = 'border: 1px solid #000000; padding: 2px 4px; text-align: left; vertical-align: top;';
   const cellStyle = 'border: 1px solid #000000; padding: 2px 4px; text-align: left; vertical-align: top;';
 
   const tableHtml = tables.map(table => {
+    const headerWeight = table.hasHeaderRow ? 'bold' : 'normal';
+    const headerStyle = `${headerCellBaseStyle} font-weight: ${headerWeight};`;
     const headerHtml = `<thead><tr>${table.headers.map(cell => `<th style="${headerStyle}">${escapeHtml(cell)}</th>`).join('')}</tr></thead>`;
     const bodyRows = table.rows.map(row => `<tr>${row.map(cell => `<td style="${cellStyle}">${escapeHtml(cell)}</td>`).join('')}</tr>`).join('');
     const bodyHtml = `<tbody>${bodyRows}</tbody>`;
