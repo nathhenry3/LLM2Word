@@ -160,51 +160,6 @@ h1 {
   line-height: 1.7;
   max-width: 800px;
 }
-
-.tool-tabs {
-  display: flex;
-  gap: 12px;
-  max-width: var(--content-max-width);
-  margin: 0 auto 24px;
-  padding: 0 32px;
-}
-
-.tool-tab {
-  flex: 1 1 0;
-  border: 1px solid var(--panel-border);
-  border-radius: 999px;
-  padding: 12px 18px;
-  background: var(--panel);
-  color: var(--muted);
-  box-shadow: var(--shadow);
-  cursor: pointer;
-  font-weight: 700;
-  text-align: center;
-  transition: border-color 0.2s, color 0.2s, transform 0.2s, background 0.2s;
-}
-
-.tool-tab:hover,
-.tool-tab:focus-visible {
-  border-color: var(--accent);
-  color: var(--accent);
-  transform: translateY(-1px);
-}
-
-.tool-tab:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--accent) 45%, transparent);
-  outline-offset: 3px;
-}
-
-.tool-tab.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #ffffff;
-}
-
-.tool-view[hidden] {
-  display: none;
-}
-
 .main {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -266,7 +221,7 @@ textarea:focus {
   border-color: var(--table-border) !important;
 }
 
-.table-preview-empty {
+.empty-preview {
   color: var(--muted);
   margin: 0;
 }
@@ -362,13 +317,6 @@ pre {
 @media (max-width: 900px) {
   .main { grid-template-columns: 1fr; }
 
-  .tool-tabs {
-    flex-direction: column;
-  }
-
-  .tool-tab {
-    width: 100%;
-  }
 
   .header-top {
     align-items: flex-start;
@@ -390,117 +338,31 @@ pre {
   </div>
 </header>
 
-<nav class="tool-tabs" aria-label="Tool selector">
-  <button class="tool-tab active" id="mathTab" type="button" aria-controls="mathView" aria-selected="true">Equations &amp; Math</button>
-  <button class="tool-tab" id="tableTab" type="button" aria-controls="tableView" aria-selected="false">Table Optimizer</button>
-  <button class="tool-tab" id="omniTab" type="button" aria-controls="omniView" aria-selected="false">Omni Formatter (Experimental)</button>
-</nav>
-
-<div class="main tool-view" id="mathView">
+<div class="main" id="formatterView">
   <section class="panel">
     <h2>Input</h2>
-    <textarea id="input" spellcheck="false" placeholder="Paste content here..."></textarea>
-    <div class="status" id="status">Ready.</div>
-  </section>
-
-  <section class="panel">
-    <h2>Preview</h2>
-    <div id="preview" class="preview"></div>
-    <button class="copy-btn" id="copyBtn">Copy Converted Content</button>
-    <p class="paste-tip">Tip: When pasting into Word, choose <strong>Keep Source Formatting</strong> for the best table borders and equation layout.</p>
-  </section>
-</div>
-
-<div class="main tool-view" id="tableView" hidden>
-  <section class="panel">
-    <h2>Markdown or CSV Table Input</h2>
-    <textarea id="tableInput" spellcheck="false" placeholder="Paste markdown tables or CSV here..."></textarea>
-    <div class="status" id="tableStatus">Ready. Paste a markdown table or CSV data to optimize it for Word.</div>
-  </section>
-
-  <section class="panel">
-    <h2>Word Table Preview</h2>
-    <div id="tablePreview" class="preview"></div>
-    <button class="copy-btn" id="copyTableBtn">Copy Word Table</button>
-    <p class="paste-tip">Tip: When pasting into Word, choose <strong>Keep Source Formatting</strong> for the best table borders and equation layout.</p>
-  </section>
-</div>
-
-<div class="main tool-view" id="omniView" hidden>
-  <section class="panel">
-    <h2>Mixed Content Input</h2>
-    <textarea id="omniInput" spellcheck="false" placeholder="Paste mixed prose, equations, markdown tables, and CSV blocks here..."></textarea>
-    <div class="status" id="omniStatus">Ready. Paste mixed content to format equations and tables together for Word.</div>
+    <textarea id="formatterInput" spellcheck="false" placeholder="Paste prose, equations, markdown tables, and CSV blocks here..."></textarea>
+    <div class="status" id="formatterStatus">Ready. Paste content to format equations and tables for Word.</div>
   </section>
 
   <section class="panel">
     <h2>Word Output Preview</h2>
-    <div id="omniPreview" class="preview"></div>
-    <button class="copy-btn" id="copyOmniBtn">Copy Omni Content</button>
+    <div id="formatterPreview" class="preview"></div>
+    <button class="copy-btn" id="copyFormatterBtn">Copy Formatted Content</button>
     <p class="paste-tip">Tip: When pasting into Word, choose <strong>Keep Source Formatting</strong> for the best table borders and equation layout.</p>
   </section>
 </div>
 
-<div class="main tool-view" id="omniView" hidden>
-  <section class="panel">
-    <h2>Mixed Content Input</h2>
-    <textarea id="omniInput" spellcheck="false" placeholder="Paste mixed prose, equations, markdown tables, and CSV blocks here..."></textarea>
-    <div class="status" id="omniStatus">Ready. Paste mixed content to format equations and tables together for Word.</div>
-  </section>
-
-  <section class="panel">
-    <h2>Word Output Preview</h2>
-    <div id="omniPreview" class="preview"></div>
-    <button class="copy-btn" id="copyOmniBtn">Copy Omni Content</button>
-  </section>
-</div>
-
-<!-- Relocated troubleshooting accordion -->
-<footer class="troubleshooting-container" id="mathTroubleshooting">
+<footer class="troubleshooting-container" id="formatterTroubleshooting">
   <details open>
     <summary>Troubleshooting &amp; System Prompts</summary>
     <div class="accordion-content">
       <p class="help-text">
-        If the conversion fails on the first try, instruct your LLM with the following prompt before generating the output you wish to convert:
-      </p>
-      <pre>Output only Markdown and LaTeX for equations. Include all text from the previous output.
-Use $...$ for inline math and $$...$$ for display math.
-Each display equation must be written in its own separate block.
-Do not place multiple equations inside a single block.
-Do not use visual formatting tricks such as spacing, alignment, or multiple equations on one line.
-Do not include separators or decorative characters.
-Do not explain the output.</pre>
-    </div>
-  </details>
-</footer>
-
-<footer class="troubleshooting-container" id="tableTroubleshooting" hidden>
-  <details open>
-    <summary>Troubleshooting &amp; System Prompts</summary>
-    <div class="accordion-content">
-      <p class="help-text">
-        If a table does not parse cleanly, ask your LLM to regenerate only the table in one of these simple formats before pasting it into the Table Optimizer:
-      </p>
-      <pre>Output only the data table, with no explanation before or after it.
-Use either CSV or a GitHub-flavored Markdown table.
-For CSV, include one header row, then one row per record.
-Escape any field that contains commas or quotes by wrapping it in double quotes.
-Inside quoted CSV fields, write a double quote as two double quotes.
-For Markdown, include a header row and a separator row such as | --- | --- |.
-Do not include bullet points, numbering, code fences, captions, or extra prose.</pre>
-    </div>
-  </details>
-</footer>
-
-<footer class="troubleshooting-container" id="omniTroubleshooting" hidden>
-  <details open>
-    <summary>Troubleshooting &amp; System Prompts</summary>
-    <div class="accordion-content">
-      <p class="help-text">
-        If mixed content does not convert cleanly, ask your LLM to regenerate the answer with clear boundaries between prose, equations, and tabular data before pasting it into the Omni Formatter:
+        If mixed content does not convert cleanly, ask your LLM to regenerate the answer with clear boundaries between prose, equations, and tabular data before pasting it here:
       </p>
       <pre>Output only clean Markdown, LaTeX equations, and simple tables. Include all content from the previous output.
 Use $...$ for inline math and $$...$$ for each display equation.
+You may also put display equations between [ and ] on their own lines.
 Put every display equation in its own separate block with blank lines before and after it.
 Use GitHub-flavored Markdown tables for all tabular data whenever possible.
 If CSV is necessary, put each CSV table in its own paragraph/block with one header row and one row per record.
@@ -516,33 +378,12 @@ Do not include decorative separators, captions-only lines, or explanations about
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 <script>
-const inputEl = document.getElementById('input'),
-      previewEl = document.getElementById('preview'),
-      statusEl = document.getElementById('status'),
-      copyBtn = document.getElementById('copyBtn'),
-      themeToggle = document.getElementById('themeToggle'),
-      mathTab = document.getElementById('mathTab'),
-      tableTab = document.getElementById('tableTab'),
-      omniTab = document.getElementById('omniTab'),
-      mathView = document.getElementById('mathView'),
-      tableView = document.getElementById('tableView'),
-      omniView = document.getElementById('omniView'),
-      tableInputEl = document.getElementById('tableInput'),
-      tablePreviewEl = document.getElementById('tablePreview'),
-      tableStatusEl = document.getElementById('tableStatus'),
-      copyTableBtn = document.getElementById('copyTableBtn'),
-      omniInputEl = document.getElementById('omniInput'),
-      omniPreviewEl = document.getElementById('omniPreview'),
-      omniStatusEl = document.getElementById('omniStatus'),
-      copyOmniBtn = document.getElementById('copyOmniBtn'),
-      mathTroubleshooting = document.getElementById('mathTroubleshooting'),
-      tableTroubleshooting = document.getElementById('tableTroubleshooting'),
-      omniTroubleshooting = document.getElementById('omniTroubleshooting');
-let renderTimer = null;
-let tableRenderTimer = null;
-let omniRenderTimer = null;
-let latestTablePayload = { html: '', plainText: '', tableCount: 0 };
-let latestOmniPayload = { html: '', plainText: '', tableCount: 0, equationCount: 0 };
+const themeToggle = document.getElementById('themeToggle'),
+      formatterInputEl = document.getElementById('formatterInput'),
+      formatterPreviewEl = document.getElementById('formatterPreview'),
+      formatterStatusEl = document.getElementById('formatterStatus'),
+      copyFormatterBtn = document.getElementById('copyFormatterBtn');
+let formatterRenderTimer = null;
 
 const themeMedia = window.matchMedia('(prefers-color-scheme: dark)');
 
@@ -582,13 +423,7 @@ function setTheme(theme) {
   saveTheme(theme);
   document.documentElement.dataset.theme = theme;
   updateThemeToggle();
-  renderTablePreview();
-  renderOmniPreview();
-}
-
-function getTableBorderColor() {
-  return getComputedStyle(document.documentElement).getPropertyValue('--table-border').trim()
-    || (getActiveTheme() === 'dark' ? '#ffffff' : '#000000');
+  renderFormatterPreview();
 }
 
 function renderMath(tex, display) {
@@ -626,30 +461,7 @@ function sanitizeRenderedHtml(html) {
   return template.innerHTML;
 }
 
-function updatePreview() {
-  let raw = inputEl.value;
-  const placeholders = [];
-
-  // Extract display equations
-  raw = raw.replace(/\$\$([\s\S]+?)\$\$/g, (_, t) => {
-    placeholders.push({t: t.trim(), d: true});
-    return `@@${placeholders.length-1}@@`;
-  });
-
-  // Extract inline equations
-  raw = raw.replace(/(?<!\\)\$([^$\n]+?)(?<!\\)\$/g, (_, t) => {
-    placeholders.push({t: t.trim(), d: false});
-    return `@@${placeholders.length-1}@@`;
-  });
-
-  let html = marked.parse(raw);
-  placeholders.forEach((p, i) => html = html.replaceAll(`@@${i}@@`, renderMath(p.t, p.d)));
-  html = sanitizeRenderedHtml(html);
-  previewEl.innerHTML = html;
-  return html;
-}
-
-async function copyHtml(html, plainTextElement = previewEl, failureStatusElement = statusEl) {
+async function copyHtml(html, plainTextElement = formatterPreviewEl, failureStatusElement = formatterStatusEl) {
   try {
     if (navigator.clipboard.write && typeof ClipboardItem !== 'undefined') {
       await navigator.clipboard.write([
@@ -673,26 +485,6 @@ async function copyHtml(html, plainTextElement = previewEl, failureStatusElement
   return false;
 }
 
-
-function setActiveTool(tool) {
-  const showMath = tool === 'math';
-  const showTables = tool === 'tables';
-  const showOmni = tool === 'omni';
-
-  mathView.hidden = !showMath;
-  tableView.hidden = !showTables;
-  omniView.hidden = !showOmni;
-  mathTroubleshooting.hidden = !showMath;
-  tableTroubleshooting.hidden = !showTables;
-  omniTroubleshooting.hidden = !showOmni;
-
-  mathTab.classList.toggle('active', showMath);
-  tableTab.classList.toggle('active', showTables);
-  omniTab.classList.toggle('active', showOmni);
-  mathTab.setAttribute('aria-selected', String(showMath));
-  tableTab.setAttribute('aria-selected', String(showTables));
-  omniTab.setAttribute('aria-selected', String(showOmni));
-}
 
 function escapeHtml(value) {
   return value
@@ -813,66 +605,6 @@ function hasClearlyLabeledFirstRow(rows) {
   );
 }
 
-function extractCsvTables(input) {
-  const blocks = input
-    .replace(/\r\n?/g, '\n')
-    .split(/\n\s*\n/)
-    .map(block => block.split('\n').map(line => line.trim()).filter(Boolean));
-
-  return blocks.reduce((tables, block) => {
-    if (block.length < 2 || !block.every(line => line.includes(','))) return tables;
-
-    const parsedRows = block.map(splitCsvRow);
-    if (parsedRows.some(row => !row.isComplete || row.cells.length < 2)) return tables;
-
-    const rawRows = parsedRows.map(row => row.cells);
-    const columnCount = Math.max(...rawRows.map(row => row.length));
-
-    const rows = rawRows.map(row => normalizeRow(row, columnCount));
-
-    tables.push({
-      headers: rows[0],
-      rows: rows.slice(1),
-      columnCount,
-      hasHeaderRow: hasClearlyLabeledFirstRow(rows)
-    });
-
-    return tables;
-  }, []);
-}
-
-function extractMarkdownTables(markdown) {
-  const lines = markdown.replace(/\r\n?/g, '\n').split('\n');
-  const tables = [];
-
-  for (let index = 0; index < lines.length - 1; index += 1) {
-    if (!isPotentialTableRow(lines[index]) || !isMarkdownSeparator(lines[index + 1])) continue;
-
-    const headers = splitMarkdownRow(lines[index]);
-    const separatorCells = splitMarkdownRow(lines[index + 1]);
-    const rawRows = [];
-    let columnCount = Math.max(headers.length, separatorCells.length);
-    index += 2;
-
-    while (index < lines.length && isPotentialTableRow(lines[index]) && !isMarkdownSeparator(lines[index])) {
-      const row = splitMarkdownRow(lines[index]);
-      rawRows.push(row);
-      columnCount = Math.max(columnCount, row.length);
-      index += 1;
-    }
-
-    tables.push({
-      headers: normalizeRow(headers, columnCount),
-      rows: rawRows.map(row => normalizeRow(row, columnCount)),
-      columnCount,
-      hasHeaderRow: true
-    });
-    index -= 1;
-  }
-
-  return tables;
-}
-
 function buildWordTableHtml(tables, formatCell = escapeHtml) {
   const wordBorderColor = '#000000';
   const wrapperStyle = 'font-family: Calibri, Arial, sans-serif; font-size: 11pt; line-height: 1.2;';
@@ -893,37 +625,6 @@ function buildWordTableHtml(tables, formatCell = escapeHtml) {
   }).join('');
 
   return `<div style="${wrapperStyle}">${tableHtml}</div>`;
-}
-
-function buildPlainTextFallback(tables) {
-  return tables.map(table => [table.headers, ...table.rows]
-    .map(row => row.map(cell => cell.trim()).join('\t'))
-    .join('\n'))
-    .join('\n\n');
-}
-
-function renderTablePreview() {
-  const markdownTables = extractMarkdownTables(tableInputEl.value);
-  const csvTables = extractCsvTables(tableInputEl.value);
-  const tables = [...markdownTables, ...csvTables];
-
-  if (!tables.length) {
-    latestTablePayload = { html: '', plainText: '', tableCount: 0 };
-    tablePreviewEl.innerHTML = '<p class="table-preview-empty">No table detected yet. Paste a markdown table with a separator row such as <code>| --- | --- |</code>, or CSV data with a header row.</p>';
-    tableStatusEl.textContent = 'Waiting for a valid markdown table or CSV data.';
-    copyTableBtn.disabled = true;
-    return latestTablePayload;
-  }
-
-  latestTablePayload = {
-    html: buildWordTableHtml(tables),
-    plainText: buildPlainTextFallback(tables),
-    tableCount: tables.length
-  };
-  tablePreviewEl.innerHTML = latestTablePayload.html;
-  tableStatusEl.textContent = `Parsed ${tables.length} table${tables.length === 1 ? '' : 's'} as a basic Word table with borders (${markdownTables.length} markdown, ${csvTables.length} CSV).`;
-  copyTableBtn.disabled = false;
-  return latestTablePayload;
 }
 
 function createPlaceholder(type, index) {
@@ -951,6 +652,7 @@ function protectMath(raw, prefix) {
 
   protectedRaw = protectedRaw.replace(/\$\$([\s\S]+?)\$\$/g, (_, tex) => addPlaceholder(tex, true));
   protectedRaw = protectedRaw.replace(/\\\[([\s\S]+?)\\\]/g, (_, tex) => addPlaceholder(tex, true));
+  protectedRaw = protectedRaw.replace(/(^|\n)[ \t]*\[[ \t]*\n([\s\S]+?)\n[ \t]*\][ \t]*(?=\n|$)/g, (_, leadingNewline, tex) => `${leadingNewline}${addPlaceholder(tex, true)}`);
   protectedRaw = protectedRaw.replace(/\\\(([^\n]+?)\\\)/g, (_, tex) => addPlaceholder(tex, false));
   protectedRaw = protectedRaw.replace(/(?<!\\)\$([^$\n]+?)(?<!\\)\$/g, (_, tex) => addPlaceholder(tex, false));
 
@@ -968,13 +670,13 @@ function renderMathInPlainText(value) {
   return restoreMath(escapeHtml(protectedValue.raw), protectedValue.placeholders);
 }
 
-function createOmniTablePlaceholder(tablePlaceholders, table) {
+function createFormatterTablePlaceholder(tablePlaceholders, table) {
   const placeholder = createPlaceholder('TABLE', tablePlaceholders.length);
   tablePlaceholders.push(buildWordTableHtml([table], renderMathInPlainText));
   return placeholder;
 }
 
-function replaceMarkdownTablesForOmni(markdown, tablePlaceholders) {
+function replaceMarkdownTablesForFormatter(markdown, tablePlaceholders) {
   const lines = markdown.replace(/\r\n?/g, '\n').split('\n');
   const output = [];
   let inCodeFence = false;
@@ -1006,7 +708,7 @@ function replaceMarkdownTablesForOmni(markdown, tablePlaceholders) {
         columnCount,
         hasHeaderRow: true
       };
-      output.push(`\n\n${createOmniTablePlaceholder(tablePlaceholders, table)}\n\n`);
+      output.push(`\n\n${createFormatterTablePlaceholder(tablePlaceholders, table)}\n\n`);
       index -= 1;
     } else {
       output.push(lines[index]);
@@ -1035,15 +737,16 @@ function isLikelyCsvTable(rows) {
   return firstRowLooksHeaderish && (hasDataSignals || (rows.length >= 3 && !hasSentenceCells));
 }
 
-function replaceCsvTablesForOmni(markdown, tablePlaceholders) {
+function replaceCsvTablesForFormatter(markdown, tablePlaceholders) {
   const blocks = markdown.split(/(\n\s*\n)/);
   let inCodeFence = false;
 
   return blocks.map(block => {
     if (/^\n\s*\n$/.test(block)) return block;
 
-    if (/^\s*```/.test(block.trim())) {
-      inCodeFence = !inCodeFence;
+    const fenceCount = block.split('\n').filter(line => /^\s*```/.test(line)).length;
+    if (fenceCount > 0) {
+      if (fenceCount % 2 === 1) inCodeFence = !inCodeFence;
       return block;
     }
 
@@ -1066,7 +769,7 @@ function replaceCsvTablesForOmni(markdown, tablePlaceholders) {
       columnCount,
       hasHeaderRow: true
     };
-    return `\n\n${createOmniTablePlaceholder(tablePlaceholders, table)}\n\n`;
+    return `\n\n${createFormatterTablePlaceholder(tablePlaceholders, table)}\n\n`;
   }).join('');
 }
 
@@ -1077,59 +780,33 @@ function renderMarkdownWithMath(raw) {
   return { html, equationCount: protectedMarkdown.placeholders.length };
 }
 
-function renderOmniPreview() {
+function renderFormatterPreview() {
   const tablePlaceholders = [];
-  let raw = omniInputEl.value;
+  let raw = formatterInputEl.value;
 
-  raw = replaceMarkdownTablesForOmni(raw, tablePlaceholders);
-  raw = replaceCsvTablesForOmni(raw, tablePlaceholders);
+  raw = replaceMarkdownTablesForFormatter(raw, tablePlaceholders);
+  raw = replaceCsvTablesForFormatter(raw, tablePlaceholders);
 
   const rendered = renderMarkdownWithMath(raw);
   const html = sanitizeRenderedHtml(replacePlaceholders(rendered.html, tablePlaceholders));
 
-  latestOmniPayload = {
+  const payload = {
     html,
-    plainText: '',
     tableCount: tablePlaceholders.length,
     equationCount: rendered.equationCount
   };
 
-  if (!omniInputEl.value.trim()) {
-    omniPreviewEl.innerHTML = '<p class="table-preview-empty">No mixed content yet. Paste prose with LaTeX equations, Markdown tables, or CSV blocks to create Word-ready output.</p>';
-    omniStatusEl.textContent = 'Waiting for mixed content.';
-    copyOmniBtn.disabled = true;
-    return latestOmniPayload;
+  if (!formatterInputEl.value.trim()) {
+    formatterPreviewEl.innerHTML = '<p class="empty-preview">No content yet. Paste prose with LaTeX equations, Markdown tables, or CSV blocks to create Word-ready output.</p>';
+    formatterStatusEl.textContent = 'Waiting for content.';
+    copyFormatterBtn.disabled = true;
+    return payload;
   }
 
-  omniPreviewEl.innerHTML = html;
-  omniStatusEl.textContent = `Formatted mixed content with ${rendered.equationCount} equation${rendered.equationCount === 1 ? '' : 's'} and ${tablePlaceholders.length} optimized table${tablePlaceholders.length === 1 ? '' : 's'}.`;
-  copyOmniBtn.disabled = false;
-  return latestOmniPayload;
-}
-
-async function copyTableToClipboard(htmlString, plainTextFallback) {
-  if (!navigator.clipboard) {
-    throw new Error('Clipboard API is unavailable.');
-  }
-
-  if (navigator.clipboard.write && typeof ClipboardItem !== 'undefined') {
-    const htmlBlob = new Blob([htmlString], { type: 'text/html' });
-    const textBlob = new Blob([plainTextFallback], { type: 'text/plain' });
-    await navigator.clipboard.write([
-      new ClipboardItem({
-        'text/html': htmlBlob,
-        'text/plain': textBlob
-      })
-    ]);
-    return;
-  }
-
-  if (navigator.clipboard.writeText) {
-    await navigator.clipboard.writeText(plainTextFallback);
-    return;
-  }
-
-  throw new Error('Clipboard write is unavailable.');
+  formatterPreviewEl.innerHTML = html;
+  formatterStatusEl.textContent = `Formatted content with ${rendered.equationCount} equation${rendered.equationCount === 1 ? '' : 's'} and ${tablePlaceholders.length} optimized table${tablePlaceholders.length === 1 ? '' : 's'}.`;
+  copyFormatterBtn.disabled = false;
+  return payload;
 }
 
 // Event listeners
@@ -1137,69 +814,30 @@ themeToggle.addEventListener('click', () => {
   setTheme(getActiveTheme() === 'dark' ? 'light' : 'dark');
 });
 
-mathTab.addEventListener('click', () => setActiveTool('math'));
-tableTab.addEventListener('click', () => setActiveTool('tables'));
-omniTab.addEventListener('click', () => setActiveTool('omni'));
-
 themeMedia.addEventListener('change', () => {
   if (!document.documentElement.dataset.theme) {
     updateThemeToggle();
-    renderTablePreview();
-    renderOmniPreview();
+    renderFormatterPreview();
   }
 });
 
-inputEl.addEventListener('input', debounceRender);
-tableInputEl.addEventListener('input', debounceTableRender);
-omniInputEl.addEventListener('input', debounceOmniRender);
-copyBtn.addEventListener('click', async () => {
-  const copied = await copyHtml(updatePreview());
+formatterInputEl.addEventListener('input', debounceFormatterRender);
+copyFormatterBtn.addEventListener('click', async () => {
+  const payload = renderFormatterPreview();
+  const copied = await copyHtml(payload.html, formatterPreviewEl, formatterStatusEl);
   if (copied) {
-    statusEl.textContent = "Copied to clipboard!";
-  }
-});
-copyTableBtn.addEventListener('click', async () => {
-  const payload = renderTablePreview();
-  if (!payload.tableCount) return;
-
-  try {
-    await copyTableToClipboard(payload.html, payload.plainText);
-    tableStatusEl.textContent = 'Copied basic Word table HTML to clipboard!';
-  } catch (error) {
-    tableStatusEl.textContent = 'Failed to copy. Please check browser clipboard permissions.';
-  }
-});
-copyOmniBtn.addEventListener('click', async () => {
-  const payload = renderOmniPreview();
-  const copied = await copyHtml(payload.html, omniPreviewEl, omniStatusEl);
-  if (copied) {
-    omniStatusEl.textContent = 'Copied mixed Word-ready content to clipboard!';
+    formatterStatusEl.textContent = 'Copied Word-ready content to clipboard!';
   }
 });
 
-function debounceRender() {
-  clearTimeout(renderTimer);
-  renderTimer = setTimeout(() => {
-    updatePreview();
-    statusEl.textContent = "Preview updated.";
-  }, 150);
-}
-
-function debounceTableRender() {
-  clearTimeout(tableRenderTimer);
-  tableRenderTimer = setTimeout(renderTablePreview, 150);
-}
-
-function debounceOmniRender() {
-  clearTimeout(omniRenderTimer);
-  omniRenderTimer = setTimeout(renderOmniPreview, 150);
+function debounceFormatterRender() {
+  clearTimeout(formatterRenderTimer);
+  formatterRenderTimer = setTimeout(renderFormatterPreview, 150);
 }
 
 // Initial hydration
 updateThemeToggle();
-inputEl.value = "### Math Samples\n\nInline equation: $P(A|B) = \\frac{P(B|A)P(A)}{P(B)}$\n\nDisplay equation:\n$$\\int_{-\\infty}^{\\infty} e^{-x^2} dx = \\sqrt{\\pi}$$\n\nMatrix example:\n$$\n\\begin{bmatrix}\n a & b \\\\\n c & d \n\\end{bmatrix}\n$$";
-tableInputEl.value = "Participant_ID,Condition,Reaction_Time_ms,Accuracy_Rate,Session_Date\nP_001,Control,450,0.96,2026-05-10\nP_002,Treatment_A,512,0.88,2026-05-11\nP_003,Treatment_B,389,0.92,2026-05-11\nP_004,Control,421,0.99,2026-05-12";
-omniInputEl.value = String.raw`# Mixed Formatting Test Suite: Tables and Equations
+formatterInputEl.value = String.raw`# Mixed Formatting Test Suite: Tables and Equations
 
 Use this sample to verify that prose, inline math, display equations, and multiple tables all copy cleanly into Word.
 
@@ -1249,9 +887,7 @@ This matrix equation checks bracket sizing, line length, matrix layout, and spac
 $$
 \mathbf{P} = \begin{bmatrix} 1 - \alpha & \alpha \\ \beta & 1 - \beta \end{bmatrix} \implies \mathbf{P}^n = \frac{1}{\alpha + \beta} \begin{bmatrix} \beta & \alpha \\ \beta & \alpha \end{bmatrix} + \frac{(1 - \alpha - \beta)^n}{\alpha + \beta} \begin{bmatrix} \alpha & -\alpha \\ -\beta & \beta \end{bmatrix}
 $$`;
-updatePreview();
-renderTablePreview();
-renderOmniPreview();
+renderFormatterPreview();
 </script>
 </body>
 </html>
