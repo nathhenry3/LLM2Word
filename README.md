@@ -4,6 +4,8 @@ Convert Markdown + LaTeX equations from ChatGPT, Claude, Gemini, and other LLMs 
 
 ## How to use
 
+Ever struggled with formatting issues when copying content from an LLM straight into MS Word? No problem! Just go to [this website](https://nathhenry3.github.io/LLM2Word/) and follow the steps below:
+
 1. Copy content from an LLM
 2. Paste it into the editor
 3. The preview updates automatically
