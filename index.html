@@ -362,7 +362,7 @@ pre {
   </div>
   <div class="sub-header">Convert LLM-generated equations and tables to MS Word format</div>
   <div class="subtitle">
-    Paste your LLM output (from ChatGPT, Claude, Gemini, etc) to convert LaTeX equations or Markdown tables into Word-compatible clipboard formats, ready to be copied straight into MS Word.
+    Paste your LLM output (from ChatGPT, Claude, Gemini, etc) to convert LaTeX equations, Markdown tables, or CSV data into Word-compatible clipboard formats, ready to be copied straight into MS Word.
   </div>
 </header>
 
@@ -387,9 +387,9 @@ pre {
 
 <div class="main tool-view" id="tableView" hidden>
   <section class="panel">
-    <h2>Markdown Table Input</h2>
-    <textarea id="tableInput" spellcheck="false" placeholder="Paste markdown tables here..."></textarea>
-    <div class="status" id="tableStatus">Ready. Paste a markdown table to optimize it for Word.</div>
+    <h2>Markdown or CSV Table Input</h2>
+    <textarea id="tableInput" spellcheck="false" placeholder="Paste markdown tables or CSV here..."></textarea>
+    <div class="status" id="tableStatus">Ready. Paste a markdown table or CSV data to optimize it for Word.</div>
   </section>
 
   <section class="panel">
@@ -400,9 +400,9 @@ pre {
 </div>
 
 <!-- Relocated troubleshooting accordion -->
-<footer class="troubleshooting-container">
+<footer class="troubleshooting-container" id="mathTroubleshooting">
   <details open>
-    <summary>Troubleshooting & System Prompts</summary>
+    <summary>Troubleshooting &amp; System Prompts</summary>
     <div class="accordion-content">
       <p class="help-text">
         If the conversion fails on the first try, instruct your LLM with the following prompt before generating the output you wish to convert:
@@ -414,6 +414,24 @@ Do not place multiple equations inside a single block.
 Do not use visual formatting tricks such as spacing, alignment, or multiple equations on one line.
 Do not include separators or decorative characters.
 Do not explain the output.</pre>
+    </div>
+  </details>
+</footer>
+
+<footer class="troubleshooting-container" id="tableTroubleshooting" hidden>
+  <details open>
+    <summary>Table Troubleshooting &amp; System Prompts</summary>
+    <div class="accordion-content">
+      <p class="help-text">
+        If a table does not parse cleanly, ask your LLM to regenerate only the table in one of these simple formats before pasting it into the Table Optimizer:
+      </p>
+      <pre>Output only the data table, with no explanation before or after it.
+Use either CSV or a GitHub-flavored Markdown table.
+For CSV, include one header row, then one row per record.
+Escape any field that contains commas or quotes by wrapping it in double quotes.
+Inside quoted CSV fields, write a double quote as two double quotes.
+For Markdown, include a header row and a separator row such as | --- | --- |.
+Do not include bullet points, numbering, code fences, captions, or extra prose.</pre>
     </div>
   </details>
 </footer>
@@ -433,7 +451,9 @@ const inputEl = document.getElementById('input'),
       tableInputEl = document.getElementById('tableInput'),
       tablePreviewEl = document.getElementById('tablePreview'),
       tableStatusEl = document.getElementById('tableStatus'),
-      copyTableBtn = document.getElementById('copyTableBtn');
+      copyTableBtn = document.getElementById('copyTableBtn'),
+      mathTroubleshooting = document.getElementById('mathTroubleshooting'),
+      tableTroubleshooting = document.getElementById('tableTroubleshooting');
 let renderTimer = null;
 let tableRenderTimer = null;
 let latestTablePayload = { html: '', plainText: '', tableCount: 0 };
@@ -486,8 +506,31 @@ function renderMath(tex, display) {
       throwOnError: false
     });
   } catch (e) {
-    return `<code>${tex}</code>`;
+    return `<code>${escapeHtml(tex)}</code>`;
   }
+}
+
+function sanitizeRenderedHtml(html) {
+  const template = document.createElement('template');
+  template.innerHTML = html;
+
+  template.content.querySelectorAll('script, iframe, object, embed, link, meta').forEach(element => element.remove());
+  template.content.querySelectorAll('*').forEach(element => {
+    [...element.attributes].forEach(attribute => {
+      const attributeName = attribute.name.toLowerCase();
+      const attributeValue = attribute.value.trim().toLowerCase();
+
+      if (attributeName.startsWith('on')) {
+        element.removeAttribute(attribute.name);
+      } else if ((attributeName === 'href' || attributeName === 'src' || attributeName === 'xlink:href') && attributeValue.startsWith('javascript:')) {
+        element.removeAttribute(attribute.name);
+      } else if (attributeName === 'style' && attributeValue.includes('javascript:')) {
+        element.removeAttribute(attribute.name);
+      }
+    });
+  });
+
+  return template.innerHTML;
 }
 
 function updatePreview() {
@@ -508,21 +551,33 @@ function updatePreview() {
 
   let html = marked.parse(raw);
   placeholders.forEach((p, i) => html = html.replaceAll(`@@${i}@@`, renderMath(p.t, p.d)));
+  html = sanitizeRenderedHtml(html);
   previewEl.innerHTML = html;
   return html;
 }
 
 async function copyHtml(html) {
   try {
-    await navigator.clipboard.write([
-      new ClipboardItem({
-        'text/html': new Blob([html], {type:'text/html'}),
-        'text/plain': new Blob([previewEl.innerText], {type:'text/plain'})
-      })
-    ]);
+    if (navigator.clipboard.write && typeof ClipboardItem !== 'undefined') {
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          'text/html': new Blob([html], {type:'text/html'}),
+          'text/plain': new Blob([previewEl.innerText], {type:'text/plain'})
+        })
+      ]);
+      return true;
+    }
+
+    if (navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(previewEl.innerText);
+      return true;
+    }
   } catch (err) {
-    statusEl.textContent = "Failed to copy. Please check browser permissions.";
+    // Fall through to the shared failure status below.
   }
+
+  statusEl.textContent = "Failed to copy. Please check browser permissions.";
+  return false;
 }
 
 
@@ -530,6 +585,8 @@ function setActiveTool(tool) {
   const showTables = tool === 'tables';
   mathView.hidden = showTables;
   tableView.hidden = !showTables;
+  mathTroubleshooting.hidden = showTables;
+  tableTroubleshooting.hidden = !showTables;
   mathTab.classList.toggle('active', !showTables);
   tableTab.classList.toggle('active', showTables);
   mathTab.setAttribute('aria-selected', String(!showTables));
@@ -592,6 +649,58 @@ function normalizeRow(row, columnCount) {
   return normalized;
 }
 
+function splitCsvRow(line) {
+  const cells = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let index = 0; index < line.length; index += 1) {
+    const character = line[index];
+
+    if (character === '"') {
+      if (inQuotes && line[index + 1] === '"') {
+        current += '"';
+        index += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (character === ',' && !inQuotes) {
+      cells.push(current.trim());
+      current = '';
+    } else {
+      current += character;
+    }
+  }
+
+  cells.push(current.trim());
+  return { cells, isComplete: !inQuotes };
+}
+
+function extractCsvTables(input) {
+  const blocks = input
+    .replace(/\r\n?/g, '\n')
+    .split(/\n\s*\n/)
+    .map(block => block.split('\n').map(line => line.trim()).filter(Boolean));
+
+  return blocks.reduce((tables, block) => {
+    if (block.length < 2 || !block.every(line => line.includes(','))) return tables;
+
+    const parsedRows = block.map(splitCsvRow);
+    if (parsedRows.some(row => !row.isComplete || row.cells.length < 2)) return tables;
+
+    const rawRows = parsedRows.map(row => row.cells);
+    const columnCount = Math.max(...rawRows.map(row => row.length));
+
+    tables.push({
+      headers: normalizeRow(rawRows[0], columnCount),
+      rows: rawRows.slice(1).map(row => normalizeRow(row, columnCount)),
+      columnCount
+    });
+
+    return tables;
+  }, []);
+}
+
 function extractMarkdownTables(markdown) {
   const lines = markdown.replace(/\r\n?/g, '\n').split('\n');
   const tables = [];
@@ -647,12 +756,14 @@ function buildPlainTextFallback(tables) {
 }
 
 function renderTablePreview() {
-  const tables = extractMarkdownTables(tableInputEl.value);
+  const markdownTables = extractMarkdownTables(tableInputEl.value);
+  const csvTables = extractCsvTables(tableInputEl.value);
+  const tables = [...markdownTables, ...csvTables];
 
   if (!tables.length) {
     latestTablePayload = { html: '', plainText: '', tableCount: 0 };
-    tablePreviewEl.innerHTML = '<p class="table-preview-empty">No markdown table detected yet. Use a header row followed by a separator row such as <code>| --- | --- |</code>.</p>';
-    tableStatusEl.textContent = 'Waiting for a valid markdown table.';
+    tablePreviewEl.innerHTML = '<p class="table-preview-empty">No table detected yet. Paste a markdown table with a separator row such as <code>| --- | --- |</code>, or CSV data with a header row.</p>';
+    tableStatusEl.textContent = 'Waiting for a valid markdown table or CSV data.';
     copyTableBtn.disabled = true;
     return latestTablePayload;
   }
@@ -663,7 +774,7 @@ function renderTablePreview() {
     tableCount: tables.length
   };
   tablePreviewEl.innerHTML = latestTablePayload.html;
-  tableStatusEl.textContent = `Parsed ${tables.length} table${tables.length === 1 ? '' : 's'} as a basic Word table with borders.`;
+  tableStatusEl.textContent = `Parsed ${tables.length} table${tables.length === 1 ? '' : 's'} as a basic Word table with borders (${markdownTables.length} markdown, ${csvTables.length} CSV).`;
   copyTableBtn.disabled = false;
   return latestTablePayload;
 }
@@ -710,8 +821,10 @@ themeMedia.addEventListener('change', () => {
 inputEl.addEventListener('input', debounceRender);
 tableInputEl.addEventListener('input', debounceTableRender);
 copyBtn.addEventListener('click', async () => {
-  await copyHtml(updatePreview());
-  statusEl.textContent = "Copied to clipboard!";
+  const copied = await copyHtml(updatePreview());
+  if (copied) {
+    statusEl.textContent = "Copied to clipboard!";
+  }
 });
 copyTableBtn.addEventListener('click', async () => {
   const payload = renderTablePreview();
@@ -741,7 +854,7 @@ function debounceTableRender() {
 // Initial hydration
 updateThemeToggle();
 inputEl.value = "### Math Samples\n\nInline equation: $P(A|B) = \\frac{P(B|A)P(A)}{P(B)}$\n\nDisplay equation:\n$$\\int_{-\\infty}^{\\infty} e^{-x^2} dx = \\sqrt{\\pi}$$\n\nMatrix example:\n$$\n\\begin{bmatrix}\n a & b \\\\\n c & d \n\\end{bmatrix}\n$$";
-tableInputEl.value = "| Participant ID | Age | Gender     | Group        | Completed |\n| -------------- | --: | ---------- | ------------ | --------- |\n| P001           |  21 | Female     | Control      | Yes       |\n| P002           |  34 | Male       | Experimental | Yes       |\n| P003           |  29 | Female     | Experimental | No        |\n| P004           |  42 | Male       | Control      | Yes       |\n| P005           |  25 | Non-binary | Experimental | Yes       |";
+tableInputEl.value = "Participant_ID,Condition,Reaction_Time_ms,Accuracy_Rate,Session_Date\nP_001,Control,450,0.96,2026-05-10\nP_002,Treatment_A,512,0.88,2026-05-11\nP_003,Treatment_B,389,0.92,2026-05-11\nP_004,Control,421,0.99,2026-05-12";
 updatePreview();
 renderTablePreview();
 </script>
