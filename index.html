@@ -441,6 +441,20 @@ pre {
   </section>
 </div>
 
+<div class="main tool-view" id="omniView" hidden>
+  <section class="panel">
+    <h2>Mixed Content Input</h2>
+    <textarea id="omniInput" spellcheck="false" placeholder="Paste mixed prose, equations, markdown tables, and CSV blocks here..."></textarea>
+    <div class="status" id="omniStatus">Ready. Paste mixed content to format equations and tables together for Word.</div>
+  </section>
+
+  <section class="panel">
+    <h2>Word Output Preview</h2>
+    <div id="omniPreview" class="preview"></div>
+    <button class="copy-btn" id="copyOmniBtn">Copy Omni Content</button>
+  </section>
+</div>
+
 <!-- Relocated troubleshooting accordion -->
 <footer class="troubleshooting-container" id="mathTroubleshooting">
   <details open>
