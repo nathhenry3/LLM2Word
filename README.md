@@ -25,6 +25,8 @@ If equations paste incorrectly, ask the LLM to output the content as raw LaTeX f
 * Bullet points
 * Numbered lists
 * Code blocks
+* Markdown tables
+* CSV tables
 
 Example inline equation:
 
