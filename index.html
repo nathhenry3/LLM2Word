@@ -29,6 +29,7 @@
   --input-bg: #ffffff;
   --preview-bg: #ffffff;
   --preview-text: #1f2937;
+  --table-border: #000000;
   --code-bg: #f1f5f9;
   --shadow: 0 8px 32px rgba(15,23,42,0.12);
   color-scheme: light;
@@ -46,6 +47,7 @@
     --input-bg: #05070a;
     --preview-bg: #0b1020;
     --preview-text: #e5e7eb;
+    --table-border: #ffffff;
     --code-bg: #05070a;
     --shadow: 0 8px 32px rgba(0,0,0,0.4);
     color-scheme: dark;
@@ -63,6 +65,7 @@
   --input-bg: #05070a;
   --preview-bg: #0b1020;
   --preview-text: #e5e7eb;
+  --table-border: #ffffff;
   --code-bg: #05070a;
   --shadow: 0 8px 32px rgba(0,0,0,0.4);
   color-scheme: dark;
@@ -79,6 +82,7 @@
   --input-bg: #ffffff;
   --preview-bg: #ffffff;
   --preview-text: #1f2937;
+  --table-border: #000000;
   --code-bg: #f1f5f9;
   --shadow: 0 8px 32px rgba(15,23,42,0.12);
   color-scheme: light;
@@ -496,6 +500,12 @@ function setTheme(theme) {
   saveTheme(theme);
   document.documentElement.dataset.theme = theme;
   updateThemeToggle();
+  renderTablePreview();
+}
+
+function getTableBorderColor() {
+  return getComputedStyle(document.documentElement).getPropertyValue('--table-border').trim()
+    || (getActiveTheme() === 'dark' ? '#ffffff' : '#000000');
 }
 
 function renderMath(tex, display) {
@@ -773,10 +783,11 @@ function extractMarkdownTables(markdown) {
 }
 
 function buildWordTableHtml(tables) {
+  const borderColor = getTableBorderColor();
   const wrapperStyle = 'font-family: Calibri, Arial, sans-serif; font-size: 11pt; line-height: 1.2;';
   const tableStyle = 'border-collapse: collapse; table-layout: auto; width: auto; margin: 8px 0; font-size: 11pt;';
-  const headerCellBaseStyle = 'border: 1px solid #000000; padding: 2px 4px; text-align: left; vertical-align: top;';
-  const cellStyle = 'border: 1px solid #000000; padding: 2px 4px; text-align: left; vertical-align: top;';
+  const headerCellBaseStyle = `border: 1px solid ${borderColor}; padding: 2px 4px; text-align: left; vertical-align: top;`;
+  const cellStyle = `border: 1px solid ${borderColor}; padding: 2px 4px; text-align: left; vertical-align: top;`;
 
   const tableHtml = tables.map(table => {
     const headerWeight = table.hasHeaderRow ? 'bold' : 'normal';
@@ -857,6 +868,7 @@ tableTab.addEventListener('click', () => setActiveTool('tables'));
 themeMedia.addEventListener('change', () => {
   if (!document.documentElement.dataset.theme) {
     updateThemeToggle();
+    renderTablePreview();
   }
 });
 
