@@ -4,17 +4,84 @@
 <title>LLM2Word</title>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<script>
+  (() => {
+    try {
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme === 'light' || savedTheme === 'dark') {
+        document.documentElement.dataset.theme = savedTheme;
+      }
+    } catch (error) {
+      // If storage is unavailable, fall back to the user's system preference.
+    }
+  })();
+</script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
 <style>
 :root {
+  --bg: #f8fafc;
+  --panel: #ffffff;
+  --panel-border: rgba(15,23,42,0.14);
+  --text: #0f172a;
+  --muted: #475569;
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
+  --input-bg: #ffffff;
+  --preview-bg: #ffffff;
+  --preview-text: #1f2937;
+  --code-bg: #f1f5f9;
+  --shadow: 0 8px 32px rgba(15,23,42,0.12);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --bg: #05070a;
+    --panel: #0d121d;
+    --panel-border: rgba(255,255,255,0.14);
+    --text: #eef2ff;
+    --muted: #cbd5e1;
+    --accent: #818cf8;
+    --accent-hover: #6366f1;
+    --input-bg: #05070a;
+    --preview-bg: #0b1020;
+    --preview-text: #e5e7eb;
+    --code-bg: #05070a;
+    --shadow: 0 8px 32px rgba(0,0,0,0.4);
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
   --bg: #05070a;
   --panel: #0d121d;
-  --panel-border: rgba(255,255,255,0.12);
+  --panel-border: rgba(255,255,255,0.14);
   --text: #eef2ff;
-  --muted: #94a3b8;
-  --accent: #6366f1;
-  --accent-hover: #4f46e5;
+  --muted: #cbd5e1;
+  --accent: #818cf8;
+  --accent-hover: #6366f1;
+  --input-bg: #05070a;
+  --preview-bg: #0b1020;
+  --preview-text: #e5e7eb;
+  --code-bg: #05070a;
   --shadow: 0 8px 32px rgba(0,0,0,0.4);
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --bg: #f8fafc;
+  --panel: #ffffff;
+  --panel-border: rgba(15,23,42,0.14);
+  --text: #0f172a;
+  --muted: #475569;
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
+  --input-bg: #ffffff;
+  --preview-bg: #ffffff;
+  --preview-text: #1f2937;
+  --code-bg: #f1f5f9;
+  --shadow: 0 8px 32px rgba(15,23,42,0.12);
+  color-scheme: light;
 }
 
 * { box-sizing: border-box; }
@@ -33,12 +100,44 @@ header {
   margin: 0 auto;
 }
 
+.header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.theme-toggle {
+  border: 1px solid var(--panel-border);
+  border-radius: 999px;
+  padding: 10px 16px;
+  background: var(--panel);
+  color: var(--text);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: border-color 0.2s, color 0.2s, transform 0.2s;
+}
+
+.theme-toggle:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.theme-toggle:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  outline-offset: 3px;
+}
+
 h1 {
-  margin: 0 0 12px;
+  margin: 0;
   font-size: 3.5rem;
   font-weight: 800;
   letter-spacing: -0.04em;
-  background: linear-gradient(to right, #fff, var(--muted));
+  background: linear-gradient(to right, var(--text), var(--muted));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -74,7 +173,7 @@ h1 {
   box-shadow: var(--shadow);
   display: flex;
   flex-direction: column;
-  min-height: 65vh;
+  min-height: calc(65vh * 0.55);
 }
 
 .panel h2 {
@@ -92,7 +191,7 @@ textarea {
   border: 1px solid var(--panel-border);
   border-radius: 12px;
   padding: 16px;
-  background: #05070a;
+  background: var(--input-bg);
   color: var(--text);
   font: 14px/1.6 "SFMono-Regular", Consolas, monospace;
   outline: none;
@@ -107,8 +206,8 @@ textarea:focus {
   overflow: auto;
   border-radius: 12px;
   padding: 20px;
-  background: #ffffff;
-  color: #1f2937;
+  background: var(--preview-bg);
+  color: var(--preview-text);
   line-height: 1.7;
 }
 
@@ -174,7 +273,7 @@ details[open] summary::after {
 }
 
 pre {
-  background: #05070a;
+  background: var(--code-bg);
   border: 1px solid var(--panel-border);
   color: var(--text);
   padding: 16px;
@@ -186,15 +285,30 @@ pre {
   margin: 12px 0 0;
 }
 
+.help-text {
+  font-size: 0.9em;
+  color: var(--muted);
+  margin: 0 0 12px;
+  line-height: 1.6;
+}
+
 @media (max-width: 900px) {
   .main { grid-template-columns: 1fr; }
+
+  .header-top {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>LLM2Word</h1>
+  <div class="header-top">
+    <h1>LLM2Word</h1>
+    <button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch color theme">🌗 Theme</button>
+  </div>
   <div class="sub-header">Convert LLM-generated equations to MS Word format</div>
   <div class="subtitle">
     Paste your LLM output (from ChatGPT, Claude, Gemini, etc) here to convert LaTeX- or Markdown-formatted equations into a Word-compatible clipboard format, ready to be copied straight into MS Word.
@@ -220,7 +334,7 @@ pre {
   <details open>
     <summary>Troubleshooting & System Prompts</summary>
     <div class="accordion-content">
-      <p style="font-size: 0.9em; color: var(--muted); margin: 0 0 12px; line-height: 1.6;">
+      <p class="help-text">
         If the conversion fails on the first try, instruct your LLM with the following prompt before generating the output you wish to convert:
       </p>
       <pre>Output only Markdown and LaTeX for equations. Include all text from the previous output.
@@ -237,40 +351,81 @@ Do not explain the output.</pre>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 <script>
-const inputEl = document.getElementById('input'), 
-      previewEl = document.getElementById('preview'), 
-      statusEl = document.getElementById('status'), 
-      copyBtn = document.getElementById('copyBtn');
+const inputEl = document.getElementById('input'),
+      previewEl = document.getElementById('preview'),
+      statusEl = document.getElementById('status'),
+      copyBtn = document.getElementById('copyBtn'),
+      themeToggle = document.getElementById('themeToggle');
 let renderTimer = null;
 
+const themeMedia = window.matchMedia('(prefers-color-scheme: dark)');
+
+function getSavedTheme() {
+  try {
+    return localStorage.getItem('theme');
+  } catch (error) {
+    return null;
+  }
+}
+
+function saveTheme(theme) {
+  try {
+    localStorage.setItem('theme', theme);
+  } catch (error) {
+    // The visual toggle still works for the current page if storage is unavailable.
+  }
+}
+
+function getActiveTheme() {
+  const savedTheme = getSavedTheme();
+  if (savedTheme === 'light' || savedTheme === 'dark') {
+    return savedTheme;
+  }
+  return themeMedia.matches ? 'dark' : 'light';
+}
+
+function updateThemeToggle() {
+  const activeTheme = getActiveTheme();
+  const nextTheme = activeTheme === 'dark' ? 'light' : 'dark';
+  themeToggle.textContent = activeTheme === 'dark' ? '☀️ Light mode' : '🌙 Dark mode';
+  themeToggle.setAttribute('aria-label', `Switch to ${nextTheme} mode`);
+  themeToggle.setAttribute('aria-pressed', String(activeTheme === 'dark'));
+}
+
+function setTheme(theme) {
+  saveTheme(theme);
+  document.documentElement.dataset.theme = theme;
+  updateThemeToggle();
+}
+
 function renderMath(tex, display) {
-  try { 
-    return katex.renderToString(tex, { 
-      displayMode: display, 
-      output: 'mathml', 
-      throwOnError: false 
-    }); 
-  } catch (e) { 
-    return `<code>${tex}</code>`; 
+  try {
+    return katex.renderToString(tex, {
+      displayMode: display,
+      output: 'mathml',
+      throwOnError: false
+    });
+  } catch (e) {
+    return `<code>${tex}</code>`;
   }
 }
 
 function updatePreview() {
   let raw = inputEl.value;
   const placeholders = [];
-  
+
   // Extract display equations
-  raw = raw.replace(/\$\$([\s\S]+?)\$\$/g, (_, t) => { 
-    placeholders.push({t: t.trim(), d: true}); 
-    return `@@${placeholders.length-1}@@`; 
+  raw = raw.replace(/\$\$([\s\S]+?)\$\$/g, (_, t) => {
+    placeholders.push({t: t.trim(), d: true});
+    return `@@${placeholders.length-1}@@`;
   });
-  
+
   // Extract inline equations
-  raw = raw.replace(/(?<!\\)\$([^$\n]+?)(?<!\\)\$/g, (_, t) => { 
-    placeholders.push({t: t.trim(), d: false}); 
-    return `@@${placeholders.length-1}@@`; 
+  raw = raw.replace(/(?<!\\)\$([^$\n]+?)(?<!\\)\$/g, (_, t) => {
+    placeholders.push({t: t.trim(), d: false});
+    return `@@${placeholders.length-1}@@`;
   });
-  
+
   let html = marked.parse(raw);
   placeholders.forEach((p, i) => html = html.replaceAll(`@@${i}@@`, renderMath(p.t, p.d)));
   previewEl.innerHTML = html;
@@ -281,7 +436,7 @@ async function copyHtml(html) {
   try {
     await navigator.clipboard.write([
       new ClipboardItem({
-        'text/html': new Blob([html], {type:'text/html'}), 
+        'text/html': new Blob([html], {type:'text/html'}),
         'text/plain': new Blob([previewEl.innerText], {type:'text/plain'})
       })
     ]);
@@ -291,21 +446,32 @@ async function copyHtml(html) {
 }
 
 // Event listeners
+themeToggle.addEventListener('click', () => {
+  setTheme(getActiveTheme() === 'dark' ? 'light' : 'dark');
+});
+
+themeMedia.addEventListener('change', () => {
+  if (!document.documentElement.dataset.theme) {
+    updateThemeToggle();
+  }
+});
+
 inputEl.addEventListener('input', debounceRender);
-copyBtn.addEventListener('click', async () => { 
-  await copyHtml(updatePreview()); 
-  statusEl.textContent = "Copied to clipboard!"; 
+copyBtn.addEventListener('click', async () => {
+  await copyHtml(updatePreview());
+  statusEl.textContent = "Copied to clipboard!";
 });
 
 function debounceRender() {
   clearTimeout(renderTimer);
-  renderTimer = setTimeout(() => { 
-    updatePreview(); 
-    statusEl.textContent = "Preview updated."; 
+  renderTimer = setTimeout(() => {
+    updatePreview();
+    statusEl.textContent = "Preview updated.";
   }, 150);
 }
 
 // Initial hydration
+updateThemeToggle();
 inputEl.value = "### Math Samples\n\nInline equation: $P(A|B) = \\frac{P(B|A)P(A)}{P(B)}$\n\nDisplay equation:\n$$\\int_{-\\infty}^{\\infty} e^{-x^2} dx = \\sqrt{\\pi}$$\n\nMatrix example:\n$$\n\\begin{bmatrix}\n a & b \\\\\n c & d \n\\end{bmatrix}\n$$";
 updatePreview();
 </script>
