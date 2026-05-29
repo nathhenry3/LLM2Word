@@ -156,6 +156,48 @@ h1 {
   max-width: 800px;
 }
 
+.tool-tabs {
+  display: flex;
+  gap: 12px;
+  max-width: 1200px;
+  margin: 0 auto 24px;
+  padding: 0 32px;
+}
+
+.tool-tab {
+  border: 1px solid var(--panel-border);
+  border-radius: 999px;
+  padding: 12px 18px;
+  background: var(--panel);
+  color: var(--muted);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  font-weight: 700;
+  transition: border-color 0.2s, color 0.2s, transform 0.2s, background 0.2s;
+}
+
+.tool-tab:hover,
+.tool-tab:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.tool-tab:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  outline-offset: 3px;
+}
+
+.tool-tab.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #ffffff;
+}
+
+.tool-view[hidden] {
+  display: none;
+}
+
 .main {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -209,6 +251,11 @@ textarea:focus {
   background: var(--preview-bg);
   color: var(--preview-text);
   line-height: 1.7;
+}
+
+.table-preview-empty {
+  color: var(--muted);
+  margin: 0;
 }
 
 .copy-btn {
@@ -295,6 +342,10 @@ pre {
 @media (max-width: 900px) {
   .main { grid-template-columns: 1fr; }
 
+  .tool-tabs {
+    flex-direction: column;
+  }
+
   .header-top {
     align-items: flex-start;
     flex-direction: column;
@@ -309,13 +360,18 @@ pre {
     <h1>LLM2Word</h1>
     <button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch color theme">🌗 Theme</button>
   </div>
-  <div class="sub-header">Convert LLM-generated equations to MS Word format</div>
+  <div class="sub-header">Convert LLM-generated equations and tables to MS Word format</div>
   <div class="subtitle">
-    Paste your LLM output (from ChatGPT, Claude, Gemini, etc) here to convert LaTeX- or Markdown-formatted equations into a Word-compatible clipboard format, ready to be copied straight into MS Word.
+    Paste your LLM output (from ChatGPT, Claude, Gemini, etc) to convert LaTeX equations or Markdown tables into Word-compatible clipboard formats, ready to be copied straight into MS Word.
   </div>
 </header>
 
-<div class="main">
+<nav class="tool-tabs" aria-label="Tool selector">
+  <button class="tool-tab active" id="mathTab" type="button" aria-controls="mathView" aria-selected="true">Equations &amp; Math</button>
+  <button class="tool-tab" id="tableTab" type="button" aria-controls="tableView" aria-selected="false">Table Optimizer</button>
+</nav>
+
+<div class="main tool-view" id="mathView">
   <section class="panel">
     <h2>Input</h2>
     <textarea id="input" spellcheck="false" placeholder="Paste content here..."></textarea>
@@ -326,6 +382,20 @@ pre {
     <h2>Preview</h2>
     <div id="preview" class="preview"></div>
     <button class="copy-btn" id="copyBtn">Copy Converted Content</button>
+  </section>
+</div>
+
+<div class="main tool-view" id="tableView" hidden>
+  <section class="panel">
+    <h2>Markdown Table Input</h2>
+    <textarea id="tableInput" spellcheck="false" placeholder="Paste markdown tables here..."></textarea>
+    <div class="status" id="tableStatus">Ready. Paste a markdown table to optimize it for Word.</div>
+  </section>
+
+  <section class="panel">
+    <h2>Word Table Preview</h2>
+    <div id="tablePreview" class="preview"></div>
+    <button class="copy-btn" id="copyTableBtn">Copy Word Table</button>
   </section>
 </div>
 
@@ -355,8 +425,18 @@ const inputEl = document.getElementById('input'),
       previewEl = document.getElementById('preview'),
       statusEl = document.getElementById('status'),
       copyBtn = document.getElementById('copyBtn'),
-      themeToggle = document.getElementById('themeToggle');
+      themeToggle = document.getElementById('themeToggle'),
+      mathTab = document.getElementById('mathTab'),
+      tableTab = document.getElementById('tableTab'),
+      mathView = document.getElementById('mathView'),
+      tableView = document.getElementById('tableView'),
+      tableInputEl = document.getElementById('tableInput'),
+      tablePreviewEl = document.getElementById('tablePreview'),
+      tableStatusEl = document.getElementById('tableStatus'),
+      copyTableBtn = document.getElementById('copyTableBtn');
 let renderTimer = null;
+let tableRenderTimer = null;
+let latestTablePayload = { html: '', plainText: '', tableCount: 0 };
 
 const themeMedia = window.matchMedia('(prefers-color-scheme: dark)');
 
@@ -445,10 +525,181 @@ async function copyHtml(html) {
   }
 }
 
+
+function setActiveTool(tool) {
+  const showTables = tool === 'tables';
+  mathView.hidden = showTables;
+  tableView.hidden = !showTables;
+  mathTab.classList.toggle('active', !showTables);
+  tableTab.classList.toggle('active', showTables);
+  mathTab.setAttribute('aria-selected', String(!showTables));
+  tableTab.setAttribute('aria-selected', String(showTables));
+}
+
+function escapeHtml(value) {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function unescapeMarkdownPipes(value) {
+  return value.replace(/\\\|/g, '|').trim();
+}
+
+function splitMarkdownRow(line) {
+  let row = line.trim();
+  if (row.startsWith('|')) row = row.slice(1);
+  if (row.endsWith('|')) row = row.slice(0, -1);
+
+  const cells = [];
+  let current = '';
+  let escaped = false;
+
+  for (const character of row) {
+    if (escaped) {
+      current += character;
+      escaped = false;
+    } else if (character === '\\') {
+      current += character;
+      escaped = true;
+    } else if (character === '|') {
+      cells.push(unescapeMarkdownPipes(current));
+      current = '';
+    } else {
+      current += character;
+    }
+  }
+
+  cells.push(unescapeMarkdownPipes(current));
+  return cells;
+}
+
+function isMarkdownSeparator(line) {
+  const cells = splitMarkdownRow(line);
+  return cells.length > 1 && cells.every(cell => /^:?-+:?$/.test(cell.replace(/\s+/g, '')));
+}
+
+function isPotentialTableRow(line) {
+  return line.includes('|') && splitMarkdownRow(line).length > 1;
+}
+
+function normalizeRow(row, columnCount) {
+  const normalized = row.slice(0, columnCount);
+  while (normalized.length < columnCount) normalized.push('');
+  return normalized;
+}
+
+function extractMarkdownTables(markdown) {
+  const lines = markdown.replace(/\r\n?/g, '\n').split('\n');
+  const tables = [];
+
+  for (let index = 0; index < lines.length - 1; index += 1) {
+    if (!isPotentialTableRow(lines[index]) || !isMarkdownSeparator(lines[index + 1])) continue;
+
+    const headers = splitMarkdownRow(lines[index]);
+    const separatorCells = splitMarkdownRow(lines[index + 1]);
+    const rawRows = [];
+    let columnCount = Math.max(headers.length, separatorCells.length);
+    index += 2;
+
+    while (index < lines.length && isPotentialTableRow(lines[index]) && !isMarkdownSeparator(lines[index])) {
+      const row = splitMarkdownRow(lines[index]);
+      rawRows.push(row);
+      columnCount = Math.max(columnCount, row.length);
+      index += 1;
+    }
+
+    tables.push({
+      headers: normalizeRow(headers, columnCount),
+      rows: rawRows.map(row => normalizeRow(row, columnCount)),
+      columnCount
+    });
+    index -= 1;
+  }
+
+  return tables;
+}
+
+function buildWordTableHtml(tables) {
+  const wrapperStyle = 'font-family: Calibri, Arial, sans-serif; font-size: 11pt; line-height: 1.2;';
+  const tableStyle = 'border-collapse: collapse; table-layout: auto; width: auto; margin: 8px 0; font-size: 11pt;';
+  const headerStyle = 'border: 1px solid #000000; padding: 2px 4px; text-align: left; vertical-align: top; font-weight: normal;';
+  const cellStyle = 'border: 1px solid #000000; padding: 2px 4px; text-align: left; vertical-align: top;';
+
+  const tableHtml = tables.map(table => {
+    const headerHtml = `<thead><tr>${table.headers.map(cell => `<th style="${headerStyle}">${escapeHtml(cell)}</th>`).join('')}</tr></thead>`;
+    const bodyRows = table.rows.map(row => `<tr>${row.map(cell => `<td style="${cellStyle}">${escapeHtml(cell)}</td>`).join('')}</tr>`).join('');
+    const bodyHtml = `<tbody>${bodyRows}</tbody>`;
+    return `<table style="${tableStyle}">${headerHtml}${bodyHtml}</table>`;
+  }).join('');
+
+  return `<div style="${wrapperStyle}">${tableHtml}</div>`;
+}
+
+function buildPlainTextFallback(tables) {
+  return tables.map(table => [table.headers, ...table.rows]
+    .map(row => row.map(cell => cell.trim()).join('\t'))
+    .join('\n'))
+    .join('\n\n');
+}
+
+function renderTablePreview() {
+  const tables = extractMarkdownTables(tableInputEl.value);
+
+  if (!tables.length) {
+    latestTablePayload = { html: '', plainText: '', tableCount: 0 };
+    tablePreviewEl.innerHTML = '<p class="table-preview-empty">No markdown table detected yet. Use a header row followed by a separator row such as <code>| --- | --- |</code>.</p>';
+    tableStatusEl.textContent = 'Waiting for a valid markdown table.';
+    copyTableBtn.disabled = true;
+    return latestTablePayload;
+  }
+
+  latestTablePayload = {
+    html: buildWordTableHtml(tables),
+    plainText: buildPlainTextFallback(tables),
+    tableCount: tables.length
+  };
+  tablePreviewEl.innerHTML = latestTablePayload.html;
+  tableStatusEl.textContent = `Parsed ${tables.length} table${tables.length === 1 ? '' : 's'} as a basic Word table with borders.`;
+  copyTableBtn.disabled = false;
+  return latestTablePayload;
+}
+
+async function copyTableToClipboard(htmlString, plainTextFallback) {
+  if (!navigator.clipboard) {
+    throw new Error('Clipboard API is unavailable.');
+  }
+
+  if (navigator.clipboard.write && typeof ClipboardItem !== 'undefined') {
+    const htmlBlob = new Blob([htmlString], { type: 'text/html' });
+    const textBlob = new Blob([plainTextFallback], { type: 'text/plain' });
+    await navigator.clipboard.write([
+      new ClipboardItem({
+        'text/html': htmlBlob,
+        'text/plain': textBlob
+      })
+    ]);
+    return;
+  }
+
+  if (navigator.clipboard.writeText) {
+    await navigator.clipboard.writeText(plainTextFallback);
+    return;
+  }
+
+  throw new Error('Clipboard write is unavailable.');
+}
+
 // Event listeners
 themeToggle.addEventListener('click', () => {
   setTheme(getActiveTheme() === 'dark' ? 'light' : 'dark');
 });
+
+mathTab.addEventListener('click', () => setActiveTool('math'));
+tableTab.addEventListener('click', () => setActiveTool('tables'));
 
 themeMedia.addEventListener('change', () => {
   if (!document.documentElement.dataset.theme) {
@@ -457,9 +708,21 @@ themeMedia.addEventListener('change', () => {
 });
 
 inputEl.addEventListener('input', debounceRender);
+tableInputEl.addEventListener('input', debounceTableRender);
 copyBtn.addEventListener('click', async () => {
   await copyHtml(updatePreview());
   statusEl.textContent = "Copied to clipboard!";
+});
+copyTableBtn.addEventListener('click', async () => {
+  const payload = renderTablePreview();
+  if (!payload.tableCount) return;
+
+  try {
+    await copyTableToClipboard(payload.html, payload.plainText);
+    tableStatusEl.textContent = 'Copied basic Word table HTML to clipboard!';
+  } catch (error) {
+    tableStatusEl.textContent = 'Failed to copy. Please check browser clipboard permissions.';
+  }
 });
 
 function debounceRender() {
@@ -470,10 +733,17 @@ function debounceRender() {
   }, 150);
 }
 
+function debounceTableRender() {
+  clearTimeout(tableRenderTimer);
+  tableRenderTimer = setTimeout(renderTablePreview, 150);
+}
+
 // Initial hydration
 updateThemeToggle();
 inputEl.value = "### Math Samples\n\nInline equation: $P(A|B) = \\frac{P(B|A)P(A)}{P(B)}$\n\nDisplay equation:\n$$\\int_{-\\infty}^{\\infty} e^{-x^2} dx = \\sqrt{\\pi}$$\n\nMatrix example:\n$$\n\\begin{bmatrix}\n a & b \\\\\n c & d \n\\end{bmatrix}\n$$";
+tableInputEl.value = "| Participant ID | Age | Gender     | Group        | Completed |\n| -------------- | --: | ---------- | ------------ | --------- |\n| P001           |  21 | Female     | Control      | Yes       |\n| P002           |  34 | Male       | Experimental | Yes       |\n| P003           |  29 | Female     | Experimental | No        |\n| P004           |  42 | Male       | Control      | Yes       |\n| P005           |  25 | Non-binary | Experimental | Yes       |";
 updatePreview();
+renderTablePreview();
 </script>
 </body>
 </html>
