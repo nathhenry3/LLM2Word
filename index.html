@@ -167,6 +167,7 @@ h1 {
   padding: 0 32px 48px;
   max-width: var(--content-max-width);
   margin: 0 auto;
+  min-width: 0;
 }
 
 .panel {
@@ -178,6 +179,8 @@ h1 {
   display: flex;
   flex-direction: column;
   min-height: calc(65vh * 0.55);
+  min-width: 0;
+  max-width: 100%;
 }
 
 .panel h2 {
@@ -190,6 +193,8 @@ h1 {
 
 textarea {
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   flex: 1;
   resize: none;
   border: 1px solid var(--panel-border);
@@ -207,6 +212,8 @@ textarea:focus {
 
 .preview {
   flex: 1;
+  max-width: 100%;
+  min-width: 0;
   overflow: auto;
   border-radius: 12px;
   padding: 20px;
@@ -315,8 +322,16 @@ pre {
 }
 
 @media (max-width: 900px) {
-  .main { grid-template-columns: 1fr; }
+  header,
+  .main,
+  .troubleshooting-container {
+    width: 100%;
+    max-width: 100vw;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
 
+  .main { grid-template-columns: minmax(0, 1fr); }
 
   .header-top {
     align-items: flex-start;
