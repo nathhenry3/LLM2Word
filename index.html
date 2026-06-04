@@ -357,6 +357,7 @@ pre {
   <section class="panel">
     <h2>Input</h2>
     <textarea id="formatterInput" spellcheck="false" placeholder="Paste prose, equations, markdown tables, and CSV blocks here..."></textarea>
+    <p class="paste-tip">Your latest input is saved only in this browser so it can be restored after a reload.</p>
     <div class="status" id="formatterStatus">Ready. Paste content to format equations and tables for Word.</div>
   </section>
 
@@ -399,6 +400,8 @@ const themeToggle = document.getElementById('themeToggle'),
       formatterStatusEl = document.getElementById('formatterStatus'),
       copyFormatterBtn = document.getElementById('copyFormatterBtn');
 let formatterRenderTimer = null;
+const formatterInputStorageKey = 'llm2word.formatterInput';
+
 
 const themeMedia = window.matchMedia('(prefers-color-scheme: dark)');
 
@@ -415,6 +418,26 @@ function saveTheme(theme) {
     localStorage.setItem('theme', theme);
   } catch (error) {
     // The visual toggle still works for the current page if storage is unavailable.
+  }
+}
+
+function getSavedFormatterInput() {
+  try {
+    return localStorage.getItem(formatterInputStorageKey);
+  } catch (error) {
+    return null;
+  }
+}
+
+function saveFormatterInput(value) {
+  try {
+    if (value) {
+      localStorage.setItem(formatterInputStorageKey, value);
+    } else {
+      localStorage.removeItem(formatterInputStorageKey);
+    }
+  } catch (error) {
+    // If local storage is unavailable or full, keep the current editing session working.
   }
 }
 
@@ -950,8 +973,12 @@ themeMedia.addEventListener('change', () => {
   }
 });
 
-formatterInputEl.addEventListener('input', debounceFormatterRender);
+formatterInputEl.addEventListener('input', () => {
+  saveFormatterInput(formatterInputEl.value);
+  debounceFormatterRender();
+});
 copyFormatterBtn.addEventListener('click', async () => {
+  saveFormatterInput(formatterInputEl.value);
   const payload = renderFormatterPreview();
   const copied = await copyHtml(payload.html, formatterPreviewEl, formatterStatusEl);
   if (copied) {
@@ -966,7 +993,8 @@ function debounceFormatterRender() {
 
 // Initial hydration
 updateThemeToggle();
-formatterInputEl.value = String.raw`# LLM2Word sample input (replace with your own text)
+const savedFormatterInput = getSavedFormatterInput();
+formatterInputEl.value = savedFormatterInput !== null ? savedFormatterInput : String.raw`# LLM2Word sample input (replace with your own text)
 
 Delete this sample and paste your own LLM output here. It demonstrates the main formats LLM2Word can copy into Word.
 

@@ -5,6 +5,8 @@ const { context } = loadFormatter();
 const {
   escapeHtml,
   sanitizeRenderedHtml,
+  getSavedFormatterInput,
+  saveFormatterInput,
   splitMarkdownRow,
   isMarkdownSeparator,
   normalizeRow,
@@ -33,6 +35,11 @@ assert.equal(
   '<p><a>bad</a><img>ok</p>',
   'sanitizer should remove script tags and javascript/event attributes'
 );
+
+saveFormatterInput('User pasted text');
+assert.equal(getSavedFormatterInput(), 'User pasted text');
+saveFormatterInput('');
+assert.equal(getSavedFormatterInput(), null);
 
 assert.deepEqual([...splitMarkdownRow('| Name | Formula | Escaped \\| pipe |')], ['Name', 'Formula', 'Escaped | pipe']);
 assert.equal(isMarkdownSeparator('| :--- | ---: |'), true);

@@ -49,4 +49,5 @@ $$
 * Works best in modern browsers
 * Clipboard access requires HTTPS
 * Everything runs locally in your browser
-* No data is uploaded or stored
+* Your latest editor input is saved in this browser's local storage so it can survive a reload
+* No data is uploaded or stored on a server
