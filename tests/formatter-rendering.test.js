@@ -73,6 +73,16 @@ assert.equal(renderedMath.equationCount, 2);
 assert.match(renderedMath.html, /<p>Sentence one\.<\/p>\n<p>Sentence two with <math data-display="false">x\+1<\/math>\.<\/p>/);
 assert.match(renderedMath.html, /<p><math data-display="true">y=2<\/math><\/p>/);
 
+const renderedHyphenatedParenthetical = renderMarkdownWithMath('At its core, a **bit** is the amount of information needed to choose between two equally likely options (a single, perfect yes-or-no question).');
+assert.equal(renderedHyphenatedParenthetical.equationCount, 0);
+assert.match(renderedHyphenatedParenthetical.html, /yes-or-no question\)\.<\/p>/);
+assert.doesNotMatch(renderedHyphenatedParenthetical.html, /<math/);
+
+const renderedAbbreviationParenthetical = renderMarkdownWithMath('At its core, a **bit** is the amount of information needed to choose between two equally likely options (e.g., a single, perfect yes-or-no question).');
+assert.equal(renderedAbbreviationParenthetical.equationCount, 0);
+assert.match(renderedAbbreviationParenthetical.html, /e\.g\., a single, perfect yes-or-no question\)\.<\/p>/);
+assert.doesNotMatch(renderedAbbreviationParenthetical.html, /<math/);
+
 elements.formatterInput.value = '';
 let payload = renderFormatterPreview();
 assert.equal(payload.tableCount, 0);

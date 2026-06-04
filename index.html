@@ -661,8 +661,11 @@ function looksLikeParentheticalMath(tex) {
   if (/https?:\/\//i.test(trimmed) || /[.!?;:]/.test(trimmed)) return false;
   if (/[^A-Za-z0-9_\\{}()[\]\s+\-*/=<>.,^|]/.test(trimmed)) return false;
 
+  const mathOperatorText = trimmed.replace(/([A-Za-z])-([A-Za-z])/g, '$1$2');
+
   return /\\[A-Za-z]+/.test(trimmed)
-    || /[=<>+\-*^_]/.test(trimmed)
+    || /[=<>+*^_]/.test(trimmed)
+    || /-/.test(mathOperatorText)
     || /^[A-Za-z][A-Za-z0-9_]*\s*\(/.test(trimmed)
     || /^[A-Za-z](?:[_^][A-Za-z0-9{}]+)?$/.test(trimmed);
 }
