@@ -80,6 +80,13 @@ assert.match(
   'inline math spaces should be preserved with non-breaking spaces so Word paste does not join words'
 );
 
+const renderedInlineMathBeforeSingleReturn = renderMarkdownWithMath('Line one with \\(ms\\)\nLine two after one return.');
+assert.match(
+  renderedInlineMathBeforeSingleReturn.html,
+  /<p>Line one with&nbsp;<math data-display="false">ms<\/math><\/p>\n<p>Line two after one return\.<\/p>/,
+  'a single return after inline math should still create a new paragraph'
+);
+
 const renderedHyphenatedParenthetical = renderMarkdownWithMath('At its core, a **bit** is the amount of information needed to choose between two equally likely options (a single, perfect yes-or-no question).');
 assert.equal(renderedHyphenatedParenthetical.equationCount, 0);
 assert.match(renderedHyphenatedParenthetical.html, /yes-or-no question\)\.<\/p>/);
