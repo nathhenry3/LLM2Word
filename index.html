@@ -721,7 +721,7 @@ function protectMath(raw, prefix) {
 
   const addPlaceholder = (tex, display) => {
     const placeholder = createPlaceholder(prefix, placeholders.length);
-    placeholders.push({ placeholder, html: renderMath(tex.trim(), display) });
+    placeholders.push({ placeholder, html: renderMath(tex.trim(), display), display });
     return placeholder;
   };
 
@@ -735,10 +735,21 @@ function protectMath(raw, prefix) {
   return { raw: protectedRaw, placeholders };
 }
 
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 function restoreMath(html, placeholders) {
-  return placeholders.reduce((updatedHtml, placeholder) => (
-    updatedHtml.replaceAll(placeholder.placeholder, placeholder.html)
-  ), html);
+  return placeholders.reduce((updatedHtml, placeholder) => {
+    if (placeholder.display) {
+      return updatedHtml.replaceAll(placeholder.placeholder, placeholder.html);
+    }
+
+    const placeholderPattern = new RegExp(`([ \t])?${escapeRegExp(placeholder.placeholder)}([ \t])?`, 'g');
+    return updatedHtml.replace(placeholderPattern, (match, leadingSpace, trailingSpace) => (
+      `${leadingSpace ? '&nbsp;' : ''}${placeholder.html}${trailingSpace ? '&nbsp;' : ''}`
+    ));
+  }, html);
 }
 
 function renderMathInPlainText(value) {

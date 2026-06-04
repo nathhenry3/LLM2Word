@@ -70,8 +70,15 @@ assert.equal(tablePlaceholders.length, 0, 'CSV tables inside fences should not b
 
 const renderedMath = renderMarkdownWithMath('Sentence one.\nSentence two with $x+1$.\n\n$$y=2$$');
 assert.equal(renderedMath.equationCount, 2);
-assert.match(renderedMath.html, /<p>Sentence one\.<\/p>\n<p>Sentence two with <math data-display="false">x\+1<\/math>\.<\/p>/);
+assert.match(renderedMath.html, /<p>Sentence one\.<\/p>\n<p>Sentence two with&nbsp;<math data-display="false">x\+1<\/math>\.<\/p>/);
 assert.match(renderedMath.html, /<p><math data-display="true">y=2<\/math><\/p>/);
+
+const renderedInlineUnitSpacing = renderMarkdownWithMath('The list adds roughly 30 to 40 \\(ms\\) to response time.');
+assert.match(
+  renderedInlineUnitSpacing.html,
+  /40&nbsp;<math data-display="false">ms<\/math>&nbsp;to response time/,
+  'inline math spaces should be preserved with non-breaking spaces so Word paste does not join words'
+);
 
 const renderedHyphenatedParenthetical = renderMarkdownWithMath('At its core, a **bit** is the amount of information needed to choose between two equally likely options (a single, perfect yes-or-no question).');
 assert.equal(renderedHyphenatedParenthetical.equationCount, 0);
