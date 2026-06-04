@@ -69,7 +69,10 @@ assert.equal(replacePlaceholders('<p>@@LLM2WORD_TABLE_0@@</p>', ['<table></table
 assert.equal(replacePlaceholders('<div>@@LLM2WORD_TABLE_0@@</div>', ['<table></table>']), '<div><table></table></div>');
 
 assert.equal(looksLikeParentheticalMath('f(t)'), true);
+assert.equal(looksLikeParentheticalMath('1 - F(t)'), true);
+assert.equal(looksLikeParentheticalMath('p_i'), true);
 assert.equal(looksLikeParentheticalMath('replace this sample with your own content'), false);
+assert.equal(looksLikeParentheticalMath('a single, perfect yes-or-no question'), false);
 assert.equal(looksLikeParentheticalMath('https://example.com'), false);
 
 const parentheticalOutput = replaceParentheticalMath('Use (f(t)) but keep (normal text).', (tex, display) => `[${display}:${tex}]`);
