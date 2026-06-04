@@ -15,6 +15,7 @@ const {
   buildWordTableHtml,
   createPlaceholder,
   replacePlaceholders,
+  escapeRegExp,
   looksLikeParentheticalMath,
   replaceParentheticalMath,
   protectMath,
@@ -67,6 +68,7 @@ assert.match(tableHtml, /&lt;unsafe&gt;/);
 assert.equal(createPlaceholder('TABLE', 2), '@@LLM2WORD_TABLE_2@@');
 assert.equal(replacePlaceholders('<p>@@LLM2WORD_TABLE_0@@</p>', ['<table></table>']), '<table></table>');
 assert.equal(replacePlaceholders('<div>@@LLM2WORD_TABLE_0@@</div>', ['<table></table>']), '<div><table></table></div>');
+assert.equal(escapeRegExp('@@LLM2WORD_MARKDOWN_MATH_0@@'), '@@LLM2WORD_MARKDOWN_MATH_0@@');
 
 assert.equal(looksLikeParentheticalMath('f(t)'), true);
 assert.equal(looksLikeParentheticalMath('1 - F(t)'), true);
@@ -81,9 +83,10 @@ assert.equal(parentheticalOutput, 'Use [false:f(t)] but keep (normal text).');
 const protectedMath = protectMath('Inline $x+1$ and display $$y=2$$ plus \\(z\\) and (p_i).', 'TEST_MATH');
 assert.equal(protectedMath.placeholders.length, 4);
 assert.match(protectedMath.raw, /@@LLM2WORD_TEST_MATH_0@@/);
-assert.match(restoreMath(protectedMath.raw, protectedMath.placeholders), /<math data-display="false">x\+1<\/math>/);
-assert.match(restoreMath(protectedMath.raw, protectedMath.placeholders), /<math data-display="true">y=2<\/math>/);
-assert.match(renderMathInPlainText('Cell $a < b$'), /<math data-display="false">a &lt; b<\/math>/);
+const restoredProtectedMath = restoreMath(protectedMath.raw, protectedMath.placeholders);
+assert.match(restoredProtectedMath, /<math data-display="false">x\+1<\/math>&nbsp;and/);
+assert.match(restoredProtectedMath, /<math data-display="true">y=2<\/math>/);
+assert.match(renderMathInPlainText('Cell $a < b$'), /Cell&nbsp;<math data-display="false">a &lt; b<\/math>/);
 
 assert.equal(isMarkdownFenceLine('```js'), true);
 assert.equal(isMarkdownFenceLine('~~~'), true);

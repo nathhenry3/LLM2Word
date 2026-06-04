@@ -100,7 +100,7 @@ function createDocumentStub(elements) {
 
 function createMarkedStub() {
   return {
-    parse(markdown) {
+    parse(markdown, options = {}) {
       const normalized = markdown.replace(/\r\n?/g, '\n').trim();
       if (!normalized) return '';
 
@@ -118,7 +118,9 @@ function createMarkedStub() {
           return `<ul>${items}</ul>`;
         }
 
-        return `<p>${escapeForHtml(block)}</p>`;
+        const escapedBlock = escapeForHtml(block);
+        const paragraphHtml = options.breaks ? escapedBlock.replace(/\n/g, '<br>\n') : escapedBlock;
+        return `<p>${paragraphHtml}</p>`;
       }).join('\n');
     }
   };

@@ -721,7 +721,7 @@ function protectMath(raw, prefix) {
 
   const addPlaceholder = (tex, display) => {
     const placeholder = createPlaceholder(prefix, placeholders.length);
-    placeholders.push({ placeholder, html: renderMath(tex.trim(), display) });
+    placeholders.push({ placeholder, html: renderMath(tex.trim(), display), display });
     return placeholder;
   };
 
@@ -735,10 +735,23 @@ function protectMath(raw, prefix) {
   return { raw: protectedRaw, placeholders };
 }
 
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 function restoreMath(html, placeholders) {
-  return placeholders.reduce((updatedHtml, placeholder) => (
-    updatedHtml.replaceAll(placeholder.placeholder, placeholder.html)
-  ), html);
+  return placeholders.reduce((updatedHtml, placeholder) => {
+    if (placeholder.display) {
+      return updatedHtml.replaceAll(placeholder.placeholder, placeholder.html);
+    }
+
+    // Only protect horizontal spaces that were already next to inline math.
+    // Never consume newlines here; single returns are paragraph boundaries in the formatter.
+    const placeholderPattern = new RegExp(`([ \t])?${escapeRegExp(placeholder.placeholder)}([ \t])?`, 'g');
+    return updatedHtml.replace(placeholderPattern, (match, leadingSpace, trailingSpace) => (
+      `${leadingSpace ? '&nbsp;' : ''}${placeholder.html}${trailingSpace ? '&nbsp;' : ''}`
+    ));
+  }, html);
 }
 
 function renderMathInPlainText(value) {
@@ -893,7 +906,7 @@ function preserveSingleNewlineParagraphs(markdown) {
 function renderMarkdownWithMath(raw) {
   const protectedMarkdown = protectMath(raw, 'MARKDOWN_MATH');
   const paragraphMarkdown = preserveSingleNewlineParagraphs(protectedMarkdown.raw);
-  const html = restoreMath(marked.parse(paragraphMarkdown), protectedMarkdown.placeholders);
+  const html = restoreMath(marked.parse(paragraphMarkdown, { breaks: true }), protectedMarkdown.placeholders);
 
   return { html, equationCount: protectedMarkdown.placeholders.length };
 }
